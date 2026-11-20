@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-delete process.env.AI_GATEWAY_API_KEY; delete process.env.VERCEL_OIDC_TOKEN; delete process.env.PLANTNET_KEY;
+delete process.env.AI_GATEWAY_API_KEY; delete process.env.VERCEL_OIDC_TOKEN;
 const { POST: ai } = await import("../api/ai.js");
 const { POST: identify } = await import("../api/identify.js");
 const { GET: care } = await import("../api/care.js");
@@ -70,24 +70,21 @@ test("/api/care: başka siteden 403, geçersiz ad 400", async () => {
   assert.equal((await care(mk("name=" + "a".repeat(41)))).status, 400);
 });
 
-test("/api/identify: anahtar yoksa 503, kökeni yanlışsa 403", async () => {
+test("/api/identify: kökeni yanlışsa 403; geçerli görsel ama AI erişimi yoksa 502", async () => {
   const fd = new FormData(); fd.append("image", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0])], { type: "image/jpeg" }), "a.jpg");
   assert.equal((await identify(new Request("https://sera.test/api/identify", { method: "POST", body: fd, headers: { host: "sera.test", origin: "https://kotu.example" } }))).status, 403);
-  assert.equal((await identify(new Request("https://sera.test/api/identify", { method: "POST", body: fd, headers: { host: "sera.test", origin: "https://sera.test" } }))).status, 503);
+  assert.equal((await identify(new Request("https://sera.test/api/identify", { method: "POST", body: fd, headers: { host: "sera.test", origin: "https://sera.test", "x-forwarded-for": "6.6.6.6" } }))).status, 502);
 });
 
 test("/api/identify: sahte uzantılı dosya 415", async () => {
-  process.env.PLANTNET_KEY = "test";
-  try {
-    const fd = new FormData(); fd.append("image", new Blob([new TextEncoder().encode("<html>not an image")], { type: "image/png" }), "a.png");
-    const r = await identify(new Request("https://sera.test/api/identify", { method: "POST", body: fd, headers: { host: "sera.test", origin: "https://sera.test", "x-forwarded-for": "5.5.5.5" } }));
-    assert.equal(r.status, 415);
-  } finally { delete process.env.PLANTNET_KEY; }
+  const fd = new FormData(); fd.append("image", new Blob([new TextEncoder().encode("<html>not an image")], { type: "image/png" }), "a.png");
+  const r = await identify(new Request("https://sera.test/api/identify", { method: "POST", body: fd, headers: { host: "sera.test", origin: "https://sera.test", "x-forwarded-for": "5.5.5.5" } }));
+  assert.equal(r.status, 415);
 });
 
 test("/api/stock: yalnızca bilinen kategoriler", async () => {
   assert.equal((await stock(new Request("https://x/api/stock?cat=__proto__"))).status, 400);
-  assert.equal((await stock(new Request("https://x/api/stock?cat=Buket"))).status, 200);
+  assert.equal((await stock(new Request("https://x/api/stock?cat=Bilinmeyen"))).status, 400);
 });
 
 test("Türkçe anahtar normalleştirme", () => {

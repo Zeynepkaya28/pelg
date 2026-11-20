@@ -644,7 +644,7 @@ async function aiPlant(name){
   if(!aiReady()){ toastSheet("Bir önceki istek sürüyor; birkaç saniye sonra tekrar deneyin."); return; }
   aiBusy=true; toastSheet(`“${name}” için bakım kartı hazırlanıyor…`);
   try{
-    // önce /api/care (Perenual + Trefle + AI, 30 gün önbellekli); o olmazsa doğrudan /api/ai
+    // önce /api/care (Vikipedi + Wikidata + GBIF + AI, 30 gün önbellekli); o olmazsa doğrudan /api/ai
     let r=null;
     if(/^[A-Za-zÇĞİÖŞÜçğıöşüâîû .'-]{2,40}$/.test(name)){
       const res=await fetch(`/api/care?name=${encodeURIComponent(name)}`).catch(()=>null);
@@ -666,13 +666,13 @@ function validateAIPlant(v){ // yapay zekâ çıktısı güvenilmez veri sayıl�
   const colors=(Array.isArray(v.colors)?v.colors:[]).slice(0,6).map(c=>({n:s(c?.n,20),hex:safeHex(c?.hex,"#E9C4D0"),m:s(c?.m,80)}));
   if(!colors.length) colors.push({n:"Yeşil",hex:"#7E9A62",m:"doğa"});
   const C=v.care||{};
-  return {id:"ai-"+norm(v.name||"bitki").replace(/ /g,"-"),ai:true,sources:arr(v.sources,20).filter(x=>["Perenual","Trefle"].includes(x)),name:s(v.name,40),latin:s(v.latin,60),kind:s(v.kind,40),blurb:s(v.blurb,300),aliases:[],colors,
+  return {id:"ai-"+norm(v.name||"bitki").replace(/ /g,"-"),ai:true,sources:arr(v.sources,20).filter(x=>["Vikipedi (TR)","Wikidata","GBIF","Wikipedia (EN)"].includes(x)),name:s(v.name,40),latin:s(v.latin,60),kind:s(v.kind,40),blurb:s(v.blurb,300),aliases:[],colors,
     care:{light:[lvl(C.light?.[0]),s(C.light?.[1],120)],water:[lvl(C.water?.[0]),s(C.water?.[1],120)],soil:s(C.soil,120),temp:s(C.temp,60),humidity:s(C.humidity,60),feed:s(C.feed,120)},
     good:arr(v.good,140),bad:arr(v.bad,140),toxic:s(v.toxic,220),shape:{t:SHAPES.includes(v.shape)?v.shape:"daisy",center:safeHex(v.center,"#E2C04A")}};
 }
 function toastSheet(msg){ sheet.replaceChildren(el("p",{class:"meaning",text:msg})); }
 
-/* --- fotoğraftan tanıma (Pl@ntNet, /api/identify) --- */
+/* --- fotoğraftan tanıma (yapay zekâ ile görsel tanıma, /api/identify) --- */
 // Latince cins adı -> rehberdeki bitki
 const GENUS={};
 for(const f of FLOWERS){ const l=(LOOKUP[f.id]?.[0]||f.latin||"").split(/[ /(]/)[0].toLowerCase(); if(l) GENUS[l]=f.id; }
@@ -702,7 +702,7 @@ function showIdResults(results){
   if(!rows.length){ toastSheet("Bu fotoğrafta tanıdık bir bitki bulunamadı. Çiçeği ya da yaprağı yakından çekmeyi dene."); return; }
   sheet.replaceChildren(
     el("h2",{text:"Bu bitki şunlardan biri olabilir"}),
-    el("p",{class:"muted",text:"Tahminler Pl@ntNet’ten gelir; yüzde, ne kadar emin olduğunu gösterir."}),
+    el("p",{class:"muted"},el("span",{class:"ai-badge",text:"Yapay zekâ tahmini — doğrulayın"})," Yüzde, ne kadar emin olduğunu gösterir."),
     el("ul",{class:"idlist"},...rows.map(x=>{
       const fid=GENUS[(x.genus||x.latin.split(" ")[0]).toLowerCase()], f=fid&&BY_ID[fid];
       return el("li",null,
@@ -710,8 +710,7 @@ function showIdResults(results){
         el("span",{class:"pct",text:`%${Math.round(x.score*100)}`}),
         f?el("button",{class:"btn",type:"button",onclick:()=>showFlower(f,0,{scroll:true})},`${f.name} rehberini aç`)
          :el("button",{class:"btn ghost",type:"button",onclick:()=>aiPlant(/^[A-Za-z .-]{2,40}$/.test(x.latin)?x.latin:(x.common[0]||x.latin))},"Bakım kartı iste"));
-    })),
-    el("p",{class:"muted"},"Tanıma: ",el("a",{href:"https://plantnet.org/",target:"_blank",rel:"noopener noreferrer"},"Pl@ntNet")));
+    })));
 }
 
 /* --- arama kutusu (ortak bileşen) --- */
@@ -854,7 +853,7 @@ document.getElementById("mq").addEventListener("input",e=>{ mQuery=e.target.valu
 document.getElementById("fcat").append(...CATS.map(c=>el("option",{value:c},c)));
 document.getElementById("fcat").addEventListener("change",paintCats);
 
-/* --- kategori şeridi: Pexels görselleri (yalnızca süs; atıf zorunlu) --- */
+/* --- kategori şeridi: Openverse görselleri (yalnızca süs; atıf zorunlu) --- */
 let catsBuilt=false;
 function paintCats(){ const v=document.getElementById("fcat").value; document.querySelectorAll("#mcats .cat").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.cat===v))); }
 async function buildCats(){
@@ -865,12 +864,12 @@ async function buildCats(){
   const got=await Promise.all(tiles.map(t=>fetch(`/api/stock?cat=${encodeURIComponent(t.c)}`).then(r=>r.ok?r.json():{photos:[]}).catch(()=>({photos:[]}))));
   const used=[];
   got.forEach((d,i)=>{
-    const p=(Array.isArray(d.photos)?d.photos:[]).find(x=>/^https:\/\/images\.pexels\.com\//.test(x?.src||"")&&/^https:\/\/www\.pexels\.com\//.test(x?.page||""));
+    const p=(Array.isArray(d.photos)?d.photos:[]).find(x=>/^https:\/\/api\.openverse\.org\//.test(x?.src||"")&&/^https:\/\//.test(x?.page||""));
     if(!p) return;
     tiles[i].ph.append(el("img",{src:p.src,alt:"",loading:"lazy"}));
-    used.push({author:clampStr(p.author,60)||"Pexels",page:p.page});
+    used.push({author:clampStr(p.author,60)||"Bilinmiyor",license:clampStr(p.license,20),page:p.page});
   });
-  if(used.length) credits.replaceChildren("Kategori görselleri: ",...used.flatMap((u,i)=>[i?", ":"",el("a",{href:u.page,target:"_blank",rel:"noopener noreferrer"},u.author)])," · ",el("a",{href:"https://www.pexels.com",target:"_blank",rel:"noopener noreferrer"},"Photos provided by Pexels"));
+  if(used.length) credits.replaceChildren("Kategori görselleri: ",...used.flatMap((u,i)=>[i?", ":"",el("a",{href:u.page,target:"_blank",rel:"noopener noreferrer"},u.author),u.license?` (${u.license})`:""])," · ",el("a",{href:"https://openverse.org",target:"_blank",rel:"noopener noreferrer"},"Openverse"));
 }
 
 /* --- ürün detayı (fotoğraflar + 3B) --- */
