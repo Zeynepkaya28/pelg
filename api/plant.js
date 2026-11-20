@@ -61,7 +61,8 @@ async function commons(latin, need) {
     const src = httpsOnly(ii?.thumburl), page = httpsOnly(ii?.descriptionurl);
     if (!src || !page || !/^https:\/\/(upload|thumb)\.wikimedia\.org\//.test(src)) continue;
     out.push({
-      src, thumb: src.replace(/\/\d+px-/, "/320px-"),
+      // Wikimedia yalnızca standart küçük resim genişliklerini sunar (330 var, 320 yok)
+      src, thumb: src.replace(/\/\d+px-/, "/330px-"),
       author: stripHtml(m.Artist?.value, 120) || "Wikimedia Commons",
       license: stripHtml(m.LicenseShortName.value, 30), page, source: "Wikimedia Commons",
     });

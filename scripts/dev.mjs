@@ -19,7 +19,8 @@ if (existsSync(envFile)) {
 }
 
 const vercel = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
-const securityHeaders = Object.fromEntries((vercel.headers?.[0]?.headers || []).filter((h) => h.key !== "Strict-Transport-Security").map((h) => [h.key, h.value]));
+const securityHeaders = Object.fromEntries((vercel.headers?.[0]?.headers || []).filter((h) => h.key !== "Strict-Transport-Security").map((h) => [h.key, h.key === "Content-Security-Policy" ? h.value.replace(/; upgrade-insecure-requests/, "") : h.value]));
+// yerelde http kullanıldığı için HSTS ve upgrade-insecure-requests uygulanmaz
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json" };
 const STATIC_OK = /^\/(index\.html|app\.js|styles\.css|favicon\.svg)?$/;
 

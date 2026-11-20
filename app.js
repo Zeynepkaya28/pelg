@@ -149,7 +149,7 @@ function el(tag, attrs, ...kids){
     if(k==="class") n.className=v;
     else if(k==="text") n.textContent=v;
     else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
-    else if(k==="style") n.setAttribute("style",v);
+    else if(k==="style") n.style.cssText=v; // CSSOM: CSP'de style-src 'unsafe-inline' gerektirmez
     else n.setAttribute(k, v===true?"":String(v));
   }
   for(const k of kids.flat()){ if(k==null||k===false) continue; n.append(k instanceof Node?k:document.createTextNode(String(k))); }
@@ -544,7 +544,8 @@ function showFlower(f,colorIdx=0,{scroll=false}={}){
   const isSafe=/zehirsiz/i.test(f.toxic);
   const meaning=el("p",{class:"meaning",id:"meaning"});
   sheet.replaceChildren(
-    el("div",{class:"kind"},f.kind, f.ai?el("span",{class:"ai-badge",text:"Yapay zekâ kartı — doğrulayın"}):null),
+    el("div",{class:"kind"},f.kind, f.ai?el("span",{class:"ai-badge",text:"Yapay zekâ kartı — doğrulayın"}):null,
+      f.ai&&f.sources?.length?el("span",{class:"muted",text:` · Ham veri: ${f.sources.join(", ")}`}):null),
     el("h2",{text:f.name}),
     el("p",{class:"latin",text:f.latin}),
     el("p",{class:"blurb",text:f.blurb}),
@@ -643,7 +644,14 @@ async function aiPlant(name){
   if(!aiReady()){ toastSheet("Bir önceki istek sürüyor; birkaç saniye sonra tekrar deneyin."); return; }
   aiBusy=true; toastSheet(`“${name}” için bakım kartı hazırlanıyor…`);
   try{
-    const r=await aiCall({mode:"plant",name});
+    // önce /api/care (Perenual + Trefle + AI, 30 gün önbellekli); o olmazsa doğrudan /api/ai
+    let r=null;
+    if(/^[A-Za-zÇĞİÖŞÜçğıöşüâîû .'-]{2,40}$/.test(name)){
+      const res=await fetch(`/api/care?name=${encodeURIComponent(name)}`).catch(()=>null);
+      if(res?.status===429) throw {code:"rate_limited"};
+      if(res?.ok) r=await res.json().catch(()=>null);
+    }
+    if(!r?.plant) r=await aiCall({mode:"plant",name});
     const f=validateAIPlant(r.plant);
     if(!f){ toastSheet(`“${name}” adında bir bitki bulunamadı. Yazımı kontrol edebilirsin.`); return; }
     showFlower(f,0,{scroll:true});
@@ -658,16 +666,58 @@ function validateAIPlant(v){ // yapay zekâ çıktısı güvenilmez veri sayıl�
   const colors=(Array.isArray(v.colors)?v.colors:[]).slice(0,6).map(c=>({n:s(c?.n,20),hex:safeHex(c?.hex,"#E9C4D0"),m:s(c?.m,80)}));
   if(!colors.length) colors.push({n:"Yeşil",hex:"#7E9A62",m:"doğa"});
   const C=v.care||{};
-  return {id:"ai-"+norm(v.name||"bitki").replace(/ /g,"-"),ai:true,name:s(v.name,40),latin:s(v.latin,60),kind:s(v.kind,40),blurb:s(v.blurb,300),aliases:[],colors,
+  return {id:"ai-"+norm(v.name||"bitki").replace(/ /g,"-"),ai:true,sources:arr(v.sources,20).filter(x=>["Perenual","Trefle"].includes(x)),name:s(v.name,40),latin:s(v.latin,60),kind:s(v.kind,40),blurb:s(v.blurb,300),aliases:[],colors,
     care:{light:[lvl(C.light?.[0]),s(C.light?.[1],120)],water:[lvl(C.water?.[0]),s(C.water?.[1],120)],soil:s(C.soil,120),temp:s(C.temp,60),humidity:s(C.humidity,60),feed:s(C.feed,120)},
     good:arr(v.good,140),bad:arr(v.bad,140),toxic:s(v.toxic,220),shape:{t:SHAPES.includes(v.shape)?v.shape:"daisy",center:safeHex(v.center,"#E2C04A")}};
 }
 function toastSheet(msg){ sheet.replaceChildren(el("p",{class:"meaning",text:msg})); }
 
+/* --- fotoğraftan tanıma (Pl@ntNet, /api/identify) --- */
+// Latince cins adı -> rehberdeki bitki
+const GENUS={};
+for(const f of FLOWERS){ const l=(LOOKUP[f.id]?.[0]||f.latin||"").split(/[ /(]/)[0].toLowerCase(); if(l) GENUS[l]=f.id; }
+GENUS.saintpaulia=GENUS.streptocarpus; // eski adıyla "Saintpaulia" dönebilir
+const idBtn=document.getElementById("idbtn"), idFile=document.getElementById("idfile");
+idBtn.addEventListener("click",()=>idFile.click());
+idFile.addEventListener("change",async()=>{
+  const file=idFile.files[0]; idFile.value=""; if(!file) return;
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type)){ toastSheet("Yalnızca JPG, PNG ya da WEBP fotoğraf yükleyebilirsin."); return; }
+  if(file.size>15*1024*1024){ toastSheet("Fotoğraf 15 MB’tan büyük; daha küçük bir fotoğraf seç."); return; }
+  idBtn.disabled=true; toastSheet("Fotoğraf inceleniyor…");
+  try{
+    const blob=await reencode(file); // küçültür, EXIF/konum bilgisini siler
+    if(blob.size>5*1024*1024) throw {code:"too_large"};
+    const fd=new FormData(); fd.append("image",blob,"bitki."+(blob.type==="image/webp"?"webp":"jpg"));
+    const r=await fetch("/api/identify",{method:"POST",body:fd}); const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw {code:d.error||"unavailable"};
+    showIdResults(Array.isArray(d.results)?d.results:[]);
+  }catch(err){
+    toastSheet(err?.code==="not_configured"?"Fotoğraftan tanıma henüz açılmadı. Bitkinin adını arama kutusuna yazabilirsin."
+      :err?.code==="rate_limited"?"Çok sık denendi; bir dakika bekleyip tekrar dene."
+      :"Fotoğraf tanınamadı. Bitkinin çiçeği ya da yaprağı net görünen başka bir fotoğraf dene.");
+  }finally{ idBtn.disabled=false; }
+});
+function showIdResults(results){
+  const rows=results.map(x=>({score:Math.max(0,Math.min(1,+x.score||0)),latin:clampStr(x.latin,80),genus:clampStr(x.genus,60),common:Array.isArray(x.common)?x.common.slice(0,3).map(c=>clampStr(c,40)).filter(Boolean):[]})).filter(x=>x.latin);
+  if(!rows.length){ toastSheet("Bu fotoğrafta tanıdık bir bitki bulunamadı. Çiçeği ya da yaprağı yakından çekmeyi dene."); return; }
+  sheet.replaceChildren(
+    el("h2",{text:"Bu bitki şunlardan biri olabilir"}),
+    el("p",{class:"muted",text:"Tahminler Pl@ntNet’ten gelir; yüzde, ne kadar emin olduğunu gösterir."}),
+    el("ul",{class:"idlist"},...rows.map(x=>{
+      const fid=GENUS[(x.genus||x.latin.split(" ")[0]).toLowerCase()], f=fid&&BY_ID[fid];
+      return el("li",null,
+        el("div",null,el("b",{text:x.common[0]||x.latin}),el("div",{class:"latin",text:x.latin})),
+        el("span",{class:"pct",text:`%${Math.round(x.score*100)}`}),
+        f?el("button",{class:"btn",type:"button",onclick:()=>showFlower(f,0,{scroll:true})},`${f.name} rehberini aç`)
+         :el("button",{class:"btn ghost",type:"button",onclick:()=>aiPlant(/^[A-Za-z .-]{2,40}$/.test(x.latin)?x.latin:(x.common[0]||x.latin))},"Bakım kartı iste"));
+    })),
+    el("p",{class:"muted"},"Tanıma: ",el("a",{href:"https://plantnet.org/",target:"_blank",rel:"noopener noreferrer"},"Pl@ntNet")));
+}
+
 /* --- arama kutusu (ortak bileşen) --- */
 function combo(input,list,{source,render,choose,fallback}){
   let items=[], sel=-1;
-  const close=()=>{ list.hidden=true; input.setAttribute("aria-expanded","false"); sel=-1; };
+  const close=()=>{ list.hidden=true; input.setAttribute("aria-expanded","false"); input.removeAttribute("aria-activedescendant"); sel=-1; };
   const paint=()=>{ [...list.children].forEach((li,i)=>li.setAttribute("aria-selected",String(i===sel))); if(sel>=0){ input.setAttribute("aria-activedescendant",list.children[sel].id); list.children[sel].scrollIntoView({block:"nearest"});} };
   const open=()=>{
     const q=input.value; items=source(q);
@@ -802,6 +852,26 @@ combo(document.getElementById("mq"),document.getElementById("msugg"),{
 document.getElementById("mq").addEventListener("input",e=>{ mQuery=e.target.value; renderMarket(); });
 ["fcat","fcity","fsort"].forEach(id=>document.getElementById(id).addEventListener("change",renderMarket));
 document.getElementById("fcat").append(...CATS.map(c=>el("option",{value:c},c)));
+document.getElementById("fcat").addEventListener("change",paintCats);
+
+/* --- kategori şeridi: Pexels görselleri (yalnızca süs; atıf zorunlu) --- */
+let catsBuilt=false;
+function paintCats(){ const v=document.getElementById("fcat").value; document.querySelectorAll("#mcats .cat").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.cat===v))); }
+async function buildCats(){
+  if(catsBuilt) return; catsBuilt=true;
+  const box=document.getElementById("mcats"), credits=document.getElementById("mcredits");
+  const tiles=CATS.map(c=>{ const ph=el("span",{class:"ph"}); const b=el("button",{class:"cat",type:"button","data-cat":c,"aria-pressed":"false",onclick:()=>{ const s=document.getElementById("fcat"); s.value=s.value===c?"":c; paintCats(); renderMarket(); }},ph,el("span",{class:"nm",text:c})); return {c,b,ph}; });
+  box.replaceChildren(...tiles.map(t=>t.b)); paintCats();
+  const got=await Promise.all(tiles.map(t=>fetch(`/api/stock?cat=${encodeURIComponent(t.c)}`).then(r=>r.ok?r.json():{photos:[]}).catch(()=>({photos:[]}))));
+  const used=[];
+  got.forEach((d,i)=>{
+    const p=(Array.isArray(d.photos)?d.photos:[]).find(x=>/^https:\/\/images\.pexels\.com\//.test(x?.src||"")&&/^https:\/\/www\.pexels\.com\//.test(x?.page||""));
+    if(!p) return;
+    tiles[i].ph.append(el("img",{src:p.src,alt:"",loading:"lazy"}));
+    used.push({author:clampStr(p.author,60)||"Pexels",page:p.page});
+  });
+  if(used.length) credits.replaceChildren("Kategori görselleri: ",...used.flatMap((u,i)=>[i?", ":"",el("a",{href:u.page,target:"_blank",rel:"noopener noreferrer"},u.author)])," · ",el("a",{href:"https://www.pexels.com",target:"_blank",rel:"noopener noreferrer"},"Photos provided by Pexels"));
+}
 
 /* --- ürün detayı (fotoğraflar + 3B) --- */
 const pmodal=document.getElementById("pmodal"); let mStage=null; const big=el("div",{class:"big"});
@@ -815,7 +885,7 @@ function openProduct(p){
     const v=views[i]; big.querySelectorAll(":scope > img, :scope > span").forEach(n=>n.remove());
     if(mStage){ mStage.renderer.domElement.style.display = v.t==="3d"?"block":"none"; mStage.paused = v.t!=="3d"; if(!mStage.paused) mStage.loop(); }
     if(v.t==="img") big.append(el("img",{src:photoURL(v.id),alt:`${p.name} fotoğrafı`}));
-    if(v.t==="svg"){ const s=flowerThumb(p.species,p.color); s.setAttribute("style","position:absolute;inset:0;display:grid;place-items:center"); big.append(s); }
+    if(v.t==="svg"){ const s=flowerThumb(p.species,p.color); s.style.cssText="position:absolute;inset:0;display:grid;place-items:center"; big.append(s); }
   };
   views.forEach((v,i)=>thumbs.append(el("button",{"aria-pressed":"false","aria-label":v.t==="3d"?"3B görünüm":`Fotoğraf ${i+1}`,onclick:()=>show(i)},v.t==="img"?el("img",{src:photoURL(v.id),alt:""}):v.t==="3d"?"3B":flowerThumb(p.species,p.color))));
   const wa=p.shop.phone.replace(/\D/g,"");
@@ -837,7 +907,16 @@ function openProduct(p){
         p.shop.about?el("p",{class:"muted",text:p.shop.about}):null,
         el("div",{class:"row"},
           wa.length>=10?el("a",{class:"btn",href:`https://wa.me/${wa}`,target:"_blank",rel:"noopener noreferrer",style:"text-decoration:none"},"WhatsApp’tan yaz"):null,
-          f?el("button",{class:"btn ghost",onclick:()=>{ pmodal.close(); location.hash="rehber"; const ci=f.colors.findIndex(x=>norm(x.n)===norm(p.color)); showFlower(f,Math.max(0,ci)); }},`${f.name} bakımını gör`):null))));
+          f?el("button",{class:"btn ghost",onclick:()=>{ pmodal.close(); location.hash="rehber"; const ci=f.colors.findIndex(x=>norm(x.n)===norm(p.color)); showFlower(f,Math.max(0,ci)); }},`${f.name} bakımını gör`):null),
+        // moderasyon: yetki veritabanında (RLS) denetlenir; düğme yalnızca kolaylık
+        isAdmin&&p.shop.id!==uid()?el("button",{class:"btn ghost danger",type:"button",onclick:async e=>{
+          if(!confirm(`“${p.name}” vitrinden kaldırılsın mı? Bu geri alınamaz.`)) return;
+          e.target.disabled=true;
+          const {error}=await sb.from("products").delete().eq("id",p.id);
+          if(!error&&p.photos.length) await sb.storage.from("product-photos").remove(p.photos);
+          if(error){ e.target.disabled=false; e.target.textContent="Kaldırılamadı"; return; }
+          pmodal.close(); loadMarket();
+        }},"Yönetici: ürünü kaldır"):null)));
   pmodal.showModal();
   if(f&&HAS_GL){
     if(!mStage){ mStage=new FlowerStage(big); }
@@ -851,10 +930,11 @@ pmodal.addEventListener("close",()=>{ if(mStage) mStage.paused=true; });
 /* =========================================================
    9. ÇİÇEKÇİ PANELİ (Supabase oturumu)
    ========================================================= */
-let myShop=null, myProducts=[], busy=false, flash="", authMode="login";
+let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false;
 function setFlash(m){ flash=m; }
 async function loadMine(){
-  if(!sb||!uid()){ myShop=null; myProducts=[]; return; }
+  if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; return; }
+  sb.from("admins").select("user_id").eq("user_id",uid()).maybeSingle().then(r=>{ isAdmin=!!r.data; });
   const [s,p]=await Promise.all([
     sb.from("shops").select("id,name,city,phone,about").eq("id",uid()).maybeSingle(),
     sb.from("products").select("id,name,cat,species,color,price,stock,description,photos,created_at").eq("shop_id",uid()).order("created_at",{ascending:false})
@@ -995,7 +1075,7 @@ function route(){
   const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"rehber";
   VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("on",x===v));
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
-  if(v==="renkler") renderColors(); if(v==="pazar") renderMarket(); if(v==="panel") renderPanel();
+  if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel();
   if(stage){ stage.visible = v==="rehber"; if(stage.visible) { stage.resize(); stage.loop(); } }
   if(v!=="rehber") scrollTo({top:0});
 }
