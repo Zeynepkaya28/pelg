@@ -1,0 +1,8 @@
+# Vercel yalnızca siteyi ve api/ klasörünü yükler
+.claude
+.env*
+tests
+scripts
+supabase
+PROMPT.md
+README.md
