@@ -16,7 +16,7 @@ Yapay zekâ Vercel AI Gateway üzerinden çalışır: Vercel'de anahtarsız (OID
 
 `plant_cache`e yazmak için isteğe bağlı: `SUPABASE_SERVICE_ROLE_KEY` (yalnızca sunucu ortam değişkeni).
 
-Yayın: `npx vercel@latest deploy --prod` (proje: `pelg`, canlı adres: https://pelg.vercel.app).
+Yayın: GitHub'daki `main` dalına her `git push` Vercel'de otomatik olarak canlıya yayınlanır (proje: `pelg`, canlı adres: https://pelg.vercel.app). Diğer dallar önizleme adresi alır. Elle yayın gerekirse: `npx vercel@latest deploy --prod`.
 
 ## Yapı
 
