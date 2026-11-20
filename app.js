@@ -489,7 +489,7 @@ const uid=()=>session?.user?.id||null;
 
 /* rehber bitkileri için fotoğraf aramasında kullanılan Latince ad ve Vikipedi başlığı */
 const LOOKUP={zambak:["Lilium","Zambak"],gul:["Rosa","Gül"],lale:["Tulipa","Lale"],orkide:["Phalaenopsis","Orkide"],papatya:["Leucanthemum vulgare","Papatya"],
-  aycicegi:["Helianthus annuus","Ayçiçeği"],lavanta:["Lavandula angustifolia","Lavanta"],karanfil:["Dianthus caryophyllus","Karanfil"],sumbul:["Hyacinthus orientalis","Sümbül"],
+  aycicegi:["Helianthus annuus","Ayçiçeği"],lavanta:["Lavandula angustifolia","Lavanta"],karanfil:["Dianthus caryophyllus","Karanfil (çiçek)"],sumbul:["Hyacinthus orientalis","Sümbül"],
   nergis:["Narcissus","Nergis"],kasimpati:["Chrysanthemum morifolium","Kasımpatı"],ortanca:["Hydrangea macrophylla","Ortanca"],menekse:["Streptocarpus ionanthus","Afrika menekşesi"],
   gerbera:["Gerbera jamesonii","Gerbera"],sakayik:["Paeonia lactiflora","Şakayık"],zeytin:["Olea europaea","Zeytin"]};
 const MEDIA=new Map();
