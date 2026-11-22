@@ -21,8 +21,9 @@ if (existsSync(envFile)) {
 const vercel = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
 const securityHeaders = Object.fromEntries((vercel.headers?.[0]?.headers || []).filter((h) => h.key !== "Strict-Transport-Security").map((h) => [h.key, h.key === "Content-Security-Policy" ? h.value.replace(/; upgrade-insecure-requests/, "") : h.value]));
 // yerelde http kullanıldığı için HSTS ve upgrade-insecure-requests uygulanmaz
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json" };
-const STATIC_OK = /^\/(index\.html|app\.js|styles\.css|favicon\.svg)?$/;
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8" };
+const STATIC_OK = /^\/(index\.html|app\.js|styles\.css|favicon\.svg|sitemap\.xml|robots\.txt)?$/;
+const PLANT_RE = /^\/bitki\/[a-z]+\/?$/; // vercel.json'daki rewrites ile aynı
 
 async function handleApi(req, res, url) {
   const name = url.pathname.slice(5);
@@ -46,8 +47,8 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   try {
     if (url.pathname.startsWith("/api/")) return await handleApi(req, res, url);
-    if (!STATIC_OK.test(url.pathname)) { res.writeHead(404, securityHeaders).end("Bulunamadı"); return; }
-    const file = path.join(ROOT, url.pathname === "/" ? "index.html" : url.pathname.slice(1));
+    if (!STATIC_OK.test(url.pathname) && !PLANT_RE.test(url.pathname)) { res.writeHead(404, securityHeaders).end("Bulunamadı"); return; }
+    const file = path.join(ROOT, url.pathname === "/" || PLANT_RE.test(url.pathname) ? "index.html" : url.pathname.slice(1));
     await stat(file);
     res.writeHead(200, { ...securityHeaders, "content-type": TYPES[path.extname(file)] || "application/octet-stream", "cache-control": "no-cache" });
     res.end(await readFile(file));

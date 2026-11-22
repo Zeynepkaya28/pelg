@@ -533,8 +533,35 @@ const ICON={
 };
 function gauge(kind,n){ const w=el("span",{class:"g","aria-label":`3 üzerinden ${n}`}); for(let i=1;i<=3;i++) w.append(svg(ICON[kind](i<=n))); return w; }
 
-function showFlower(f,colorIdx=0,{scroll=false}={}){
+/* --- her bitkiye ayrı adres: /bitki/orkide?renk=pembe --- */
+const slug=s=>norm(s).replace(/ /g,"-");
+const SITE_TITLE="Sera Defteri";
+const metaDesc=document.querySelector('meta[name="description"]'), canonical=document.querySelector('link[rel="canonical"]');
+const DEFAULT_DESC=metaDesc?.content||"";
+function plantPath(f,ci){ if(!f||f.ai||!BY_ID[f.id]) return "/"; return `/bitki/${f.id}`+(ci>0?`?renk=${encodeURIComponent(slug(f.colors[ci].n))}`:""); }
+function plantFromUrl(){
+  const m=location.pathname.match(/^\/bitki\/([a-z]+)\/?$/); const f=m&&BY_ID[m[1]];
+  if(!f) return null;
+  const rk=new URLSearchParams(location.search).get("renk")||"";
+  return {f,ci:Math.max(0,f.colors.findIndex(c=>slug(c.n)===rk))};
+}
+const isAuthHash=()=>/access_token|refresh_token|error_description|type=(recovery|signup|magiclink)/.test(location.hash);
+function syncUrl(mode){
+  const path=plantPath(current,currentColor), now=location.pathname+location.search;
+  if(mode!=="none"&&!isAuthHash()&&path!==now) history[mode==="push"?"pushState":"replaceState"](null,"",path);
+  // başlık ve açıklama: paylaşılan bağlantıda ve arama motorunda bitkinin adı görünsün
+  // başlık, adres çubuğundaki sayfaya göre (ana sayfada genel başlık kalır)
+  if(current&&!current.ai&&location.pathname===`/bitki/${current.id}`){
+    const c=current.colors[currentColor];
+    document.title=`${currentColor>0?c.n+" ":""}${current.name} bakımı ve renklerin anlamı — ${SITE_TITLE}`;
+    metaDesc&&(metaDesc.content=`${current.name} (${current.latin}): ${current.blurb} ${c.n} ${current.name.toLocaleLowerCase("tr")}: ${c.m}.`.slice(0,300));
+    canonical&&(canonical.href=location.origin+`/bitki/${current.id}`);
+  }else{ document.title=SITE_TITLE; metaDesc&&(metaDesc.content=DEFAULT_DESC); canonical&&(canonical.href=location.origin+"/"); }
+}
+
+function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
   current=f; currentColor=Math.max(0,Math.min(colorIdx,f.colors.length-1));
+  syncUrl(hist);
   const col=f.colors[currentColor];
   stage&&stage.build(f,col.hex);
   // renkler
@@ -578,7 +605,7 @@ function renderMeaning(){
 }
 function pickColor(i){
   currentColor=i; swatches.querySelectorAll(".sw").forEach((b,k)=>b.setAttribute("aria-pressed",String(k===i)));
-  stage&&stage.setColor(current.colors[i].hex); renderMeaning(); if(viewMode==="photo") setMode("3d");
+  stage&&stage.setColor(current.colors[i].hex); renderMeaning(); syncUrl("replace"); if(viewMode==="photo") setMode("3d");
 }
 
 /* --- gerçek fotoğraflar (iNaturalist / Wikimedia Commons) + Vikipedi özeti --- */
@@ -929,7 +956,7 @@ pmodal.addEventListener("close",()=>{ if(mStage) mStage.paused=true; });
 /* =========================================================
    9. ÇİÇEKÇİ PANELİ (Supabase oturumu)
    ========================================================= */
-let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false;
+let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false, editId=null;
 function setFlash(m){ flash=m; }
 async function loadMine(){
   if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; return; }
@@ -941,7 +968,53 @@ async function loadMine(){
   myShop=s.data||null;
   myProducts=(p.data||[]).map(x=>cleanProduct({...x,shop:{id:uid(),name:myShop?.name||"",city:"",phone:"",about:""}})).filter(Boolean);
 }
+/* --- şifremi unuttum: e-postaya sıfırlama bağlantısı --- */
+function resetForm(box){
+  const email=el("input",{id:"r-email",type:"email",autocomplete:"email",required:true,maxlength:"120"});
+  const err=el("p",{class:"err","aria-live":"polite"}), btn=el("button",{class:"btn",type:"submit",text:"Sıfırlama bağlantısı gönder"});
+  box.replaceChildren(el("form",{class:"card narrow",onsubmit:async e=>{
+    e.preventDefault(); err.textContent="";
+    const em=clampStr(email.value,120);
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ err.textContent="Geçerli bir e-posta adresi yaz."; return; }
+    btn.disabled=true;
+    try{
+      const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+"/#panel"});
+      if(error&&/rate|seconds/i.test(error.message)){ err.textContent="Çok sık deneme yapıldı; birkaç dakika sonra tekrar dene."; return; }
+      // hesabın var olup olmadığını belli etmemek için her durumda aynı mesaj
+      box.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Gelen kutunu kontrol et"}),
+        el("p",{text:`${em} adresiyle bir hesap varsa, şifreni yenilemen için bir bağlantı gönderdik. Bağlantı bir saat geçerli.`}),
+        el("button",{class:"btn ghost",onclick:()=>{authMode="login";renderPanel();}},"Giriş ekranına dön")));
+    }finally{ btn.disabled=false; }
+  }},
+    el("h3",{text:"Şifreni mi unuttun?"}),
+    el("p",{class:"muted",text:"Hesabının e-posta adresini yaz; şifreni yenilemen için bir bağlantı gönderelim."}),
+    el("div",{class:"field"},el("label",{for:"r-email",text:"E-posta"}),email),
+    btn,err,
+    el("p",{class:"muted"},el("button",{type:"button",class:"linkbtn",onclick:()=>{authMode="login";renderPanel();}},"Giriş ekranına dön"))));
+}
+/* --- sıfırlama bağlantısından gelindi: yeni şifre --- */
+function newPassForm(box){
+  const p1=el("input",{id:"n-pass",type:"password",autocomplete:"new-password",required:true,minlength:"8",maxlength:"72"});
+  const p2=el("input",{id:"n-pass2",type:"password",autocomplete:"new-password",required:true,minlength:"8",maxlength:"72"});
+  const err=el("p",{class:"err","aria-live":"polite"}), btn=el("button",{class:"btn",type:"submit",text:"Yeni şifreyi kaydet"});
+  box.replaceChildren(el("form",{class:"card narrow",onsubmit:async e=>{
+    e.preventDefault(); err.textContent="";
+    if(p1.value.length<8){ err.textContent="Şifre en az 8 karakter olmalı."; return; }
+    if(p1.value!==p2.value){ err.textContent="İki şifre aynı değil."; return; }
+    btn.disabled=true;
+    try{
+      const {error}=await sb.auth.updateUser({password:p1.value});
+      if(error){ err.textContent=/same|different/i.test(error.message)?"Yeni şifre eskisiyle aynı olamaz.":/weak|password/i.test(error.message)?"Bu şifre çok zayıf; daha uzun ve tahmin edilmesi zor bir şifre seç.":"Şifre değiştirilemedi. Bağlantının süresi dolmuş olabilir; yeniden sıfırlama iste."; return; }
+      authMode="login"; setFlash("Şifren değiştirildi."); renderPanel();
+    }finally{ btn.disabled=false; }
+  }},
+    el("h3",{text:"Yeni şifre belirle"}),
+    el("div",{class:"field"},el("label",{for:"n-pass",text:"Yeni şifre"}),p1,el("span",{class:"help",text:"En az 8 karakter."})),
+    el("div",{class:"field"},el("label",{for:"n-pass2",text:"Yeni şifre (tekrar)"}),p2),
+    btn,err));
+}
 function authForm(box){
+  if(authMode==="reset"){ resetForm(box); return; }
   const email=el("input",{id:"a-email",type:"email",autocomplete:"email",required:true,maxlength:"120"});
   const pass=el("input",{id:"a-pass",type:"password",autocomplete:authMode==="login"?"current-password":"new-password",required:true,minlength:"8",maxlength:"72"});
   const err=el("p",{class:"err","aria-live":"polite"}), btn=el("button",{class:"btn",type:"submit",text:authMode==="login"?"Giriş yap":"Hesap oluştur"});
@@ -964,7 +1037,8 @@ function authForm(box){
   }},
     el("h3",{text:authMode==="login"?"Çiçekçi girişi":"Çiçekçi hesabı oluştur"}),
     el("div",{class:"field"},el("label",{for:"a-email",text:"E-posta"}),email),
-    el("div",{class:"field"},el("label",{for:"a-pass",text:"Şifre"}),pass,el("span",{class:"help",text:"En az 8 karakter."})),
+    el("div",{class:"field"},el("label",{for:"a-pass",text:"Şifre"}),pass,el("span",{class:"help",text:"En az 8 karakter."}),
+      authMode==="login"?el("button",{type:"button",class:"linkbtn small",onclick:()=>{authMode="reset";renderPanel();}},"Şifremi unuttum"):null),
     btn,err,
     el("p",{class:"muted"},authMode==="login"?"Hesabın yok mu? ":"Zaten hesabın var mı? ",
       el("button",{type:"button",class:"linkbtn",onclick:()=>{authMode=authMode==="login"?"signup":"login";renderPanel();}},authMode==="login"?"Hesap oluştur":"Giriş yap")));
@@ -973,7 +1047,8 @@ function authForm(box){
 function renderPanel(){
   const box=document.getElementById("panelbox");
   if(!sb){ box.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Panel şu an açılamıyor"}),el("p",{text:"Bağlantını kontrol edip sayfayı yenile."}))); return; }
-  if(!uid()){ authForm(box); return; }
+  if(!uid()){ if(authMode==="newpass") authMode="login"; authForm(box); return; }
+  if(authMode==="newpass"){ newPassForm(box); return; }
   const s=myShop||{name:"",city:"",phone:"",about:""};
   const fName=el("input",{id:"s-name",required:true,maxlength:"60",value:s.name}), fCity=el("input",{id:"s-city",maxlength:"30",value:s.city,placeholder:"Örn. İzmir"}),
         fPhone=el("input",{id:"s-phone",maxlength:"20",value:s.phone,placeholder:"+90 5xx xxx xx xx",inputmode:"tel"}), fAbout=el("textarea",{id:"s-about",maxlength:"300"},s.about);
@@ -997,6 +1072,9 @@ function renderPanel(){
   const right=el("div",{class:"card"});
   if(!myShop){ right.append(el("h3",{text:"Ürünler"}),el("p",{class:"muted",text:"Önce dükkân bilgilerini kaydet; sonra ürün ekleyebilirsin."})); }
   else{
+    // düzenleme: aynı form, mevcut ürünün değerleriyle dolar
+    const ed=editId?myProducts.find(x=>x.id===editId)||null:null; if(!ed) editId=null;
+    let keep=ed?[...ed.photos]:[]; // korunacak mevcut fotoğraflar
     const pName=el("input",{id:"p-name",maxlength:"60",required:true,placeholder:"Örn. Beyaz zambak demeti"});
     const pCat=el("select",{id:"p-cat"},...CATS.map(c=>el("option",{value:c},c)));
     const pSp=el("select",{id:"p-sp"},el("option",{value:""},"Rehberde yok / diğer"),...FLOWERS.map(f=>el("option",{value:f.id},f.name)));
@@ -1008,17 +1086,34 @@ function renderPanel(){
     const pDesc=el("textarea",{id:"p-desc",maxlength:"600",placeholder:"Boy, saksı çapı, kaç dal, bakım notu…"});
     const pFiles=el("input",{id:"p-files",type:"file",accept:"image/jpeg,image/png,image/webp",multiple:true});
     const prev=el("div",{class:"previews"}), pErr=el("p",{class:"err","aria-live":"polite"});
-    pFiles.addEventListener("change",()=>{ prev.replaceChildren(); [...pFiles.files].slice(0,4).forEach(f=>{ if(/^image\/(jpeg|png|webp)$/.test(f.type)) prev.append(el("img",{src:URL.createObjectURL(f),alt:""})); }); });
-    const addBtn=el("button",{class:"btn warm",type:"submit",text:"Ürünü ekle"});
-    const prodForm=el("form",{onsubmit:async e=>{
+    const slots=()=>4-keep.length;
+    const fileHelp=el("span",{class:"help"});
+    const paintFileHelp=()=>{ fileHelp.textContent=`JPG, PNG ya da WEBP. Yüklemeden önce küçültülür, konum bilgisi silinir. ${slots()?`${slots()} fotoğraf daha ekleyebilirsin.`:"4 fotoğraf sınırı doldu; yeni eklemek için birini kaldır."}`; pFiles.disabled=!slots(); };
+    const paintPrev=()=>{ prev.replaceChildren(...[...pFiles.files].slice(0,slots()).filter(f=>/^image\/(jpeg|png|webp)$/.test(f.type)).map(f=>el("img",{src:URL.createObjectURL(f),alt:""}))); };
+    pFiles.addEventListener("change",paintPrev);
+    // mevcut fotoğraflar: her birinin "kaldır" düğmesi
+    const keepBox=el("div",{class:"keep"});
+    const paintKeep=()=>{
+      keepBox.replaceChildren(...keep.map(p=>el("span",{class:"kp"},el("img",{src:photoURL(p),alt:""}),
+        el("button",{type:"button",class:"x","aria-label":"Bu fotoğrafı kaldır",onclick:()=>{ keep=keep.filter(x=>x!==p); paintKeep(); paintFileHelp(); paintPrev(); }},"×"))));
+    };
+    if(ed){
+      pName.value=ed.name; pCat.value=ed.cat; pSp.value=ed.species; fillColors(); pColor.value=ed.color;
+      pPrice.value=String(ed.price); pStock.value=String(ed.stock); pDesc.value=ed.desc;
+      paintKeep();
+    }
+    paintFileHelp();
+    const addBtn=el("button",{class:"btn warm",type:"submit",text:ed?"Değişiklikleri kaydet":"Ürünü ekle"});
+    const idleText=addBtn.textContent;
+    const prodForm=el("form",{id:"prodform",onsubmit:async e=>{
       e.preventDefault(); pErr.textContent=""; if(busy) return;
       const name=clampStr(pName.value,60), price=Number(pPrice.value), stock=Math.floor(Number(pStock.value)||0);
       if(name.length<2){ pErr.textContent="Ürün adı en az 2 karakter olmalı."; return; }
       if(!isFinite(price)||price<0||price>1e6){ pErr.textContent="Fiyat 0 ile 1.000.000 TL arasında olmalı."; return; }
       if(stock<0||stock>9999){ pErr.textContent="Stok 0 ile 9999 arasında olmalı."; return; }
-      const files=[...pFiles.files].slice(0,4);
+      const files=[...pFiles.files].slice(0,slots());
       for(const f of files){ if(!/^image\/(jpeg|png|webp)$/.test(f.type)){ pErr.textContent=`“${f.name}” desteklenmiyor. JPG, PNG ya da WEBP seç.`; return; } if(f.size>15*1024*1024){ pErr.textContent=`“${f.name}” 15 MB’tan büyük.`; return; } }
-      busy=true; addBtn.disabled=true; addBtn.textContent=files.length?"Fotoğraflar yükleniyor…":"Ekleniyor…";
+      busy=true; addBtn.disabled=true; addBtn.textContent=files.length?"Fotoğraflar yükleniyor…":ed?"Kaydediliyor…":"Ekleniyor…";
       const uploaded=[];
       try{
         for(const f of files){
@@ -1027,31 +1122,50 @@ function renderPanel(){
           const {error}=await sb.storage.from("product-photos").upload(path,blob,{contentType:blob.type,cacheControl:"31536000",upsert:false});
           if(error) throw {step:"upload"}; uploaded.push(path);
         }
-        const {error}=await sb.from("products").insert({shop_id:uid(),name,cat:pCat.value,species:pSp.value,color:clampStr(pColor.value,20),price,stock,description:clampStr(pDesc.value,600),photos:uploaded});
-        if(error) throw {step:"insert",msg:error.message};
-        setFlash("Ürün vitrine eklendi."); await loadMine(); renderPanel(); loadMarket();
+        const row={name,cat:pCat.value,species:pSp.value,color:clampStr(pColor.value,20),price,stock,description:clampStr(pDesc.value,600),photos:[...keep,...uploaded]};
+        if(ed){
+          // RLS başka birinin ürününü sessizce 0 satırla geçer; dönen satırla doğrula
+          const {data,error}=await sb.from("products").update(row).eq("id",ed.id).eq("shop_id",uid()).select("id");
+          if(error||!data?.length) throw {step:"update",msg:error?.message};
+          const dropped=ed.photos.filter(p=>!keep.includes(p));
+          if(dropped.length) await sb.storage.from("product-photos").remove(dropped);
+          editId=null; setFlash("Ürün güncellendi.");
+        }else{
+          const {error}=await sb.from("products").insert({shop_id:uid(),...row});
+          if(error) throw {step:"insert",msg:error.message};
+          setFlash("Ürün vitrine eklendi.");
+        }
+        await loadMine(); renderPanel(); loadMarket();
       }catch(err){
         if(uploaded.length) await sb.storage.from("product-photos").remove(uploaded);
-        pErr.textContent = err.step==="upload" ? "Fotoğraf yüklenemedi. Dosyayı küçültüp tekrar dene." : /200/.test(err.msg||"") ? "Bir dükkânda en fazla 200 ürün olabilir." : "Ürün eklenemedi, tekrar dene.";
-      }finally{ busy=false; addBtn.disabled=false; addBtn.textContent="Ürünü ekle"; }
+        pErr.textContent = err.step==="upload" ? "Fotoğraf yüklenemedi. Dosyayı küçültüp tekrar dene." : /200/.test(err.msg||"") ? "Bir dükkânda en fazla 200 ürün olabilir." : ed ? "Değişiklikler kaydedilemedi, tekrar dene." : "Ürün eklenemedi, tekrar dene.";
+      }finally{ busy=false; addBtn.disabled=false; addBtn.textContent=idleText; }
     }},
-      el("h3",{text:"Yeni ürün"}),
+      el("h3",{text:ed?`Ürünü düzenle: ${ed.name}`:"Yeni ürün"}),
       el("div",{class:"field"},el("label",{for:"p-name",text:"Ürün adı"}),pName),
       el("div",{class:"two"},el("div",{class:"field"},el("label",{for:"p-cat",text:"Kategori"}),pCat),el("div",{class:"field"},el("label",{for:"p-sp",text:"Bitki türü"}),pSp,el("span",{class:"help",text:"Seçersen vitrinde 3B görünüm ve bakım rehberi bağlanır."}))),
       el("div",{class:"two"},el("div",{class:"field"},el("label",{for:"p-color",text:"Renk"}),pColor),el("div",{class:"field"},el("label",{for:"p-price",text:"Fiyat (TL)"}),pPrice)),
       el("div",{class:"two"},el("div",{class:"field"},el("label",{for:"p-stock",text:"Stok"}),pStock),el("div")),
       el("div",{class:"field"},el("label",{for:"p-desc",text:"Açıklama"}),pDesc),
-      el("div",{class:"field"},el("label",{for:"p-files",text:"Fotoğraflar (en fazla 4)"}),pFiles,el("span",{class:"help",text:"JPG, PNG ya da WEBP. Yüklemeden önce küçültülür, konum bilgisi silinir."}),prev),
-      addBtn,pErr);
-    const mine=el("ul",{class:"mine"},...myProducts.map(it=>el("li",null,
+      el("div",{class:"field"},el("label",{for:"p-files",text:"Fotoğraflar (en fazla 4)"}),ed?keepBox:null,pFiles,fileHelp,prev),
+      el("div",{class:"row"},addBtn,ed?el("button",{type:"button",class:"btn ghost",onclick:()=>{ editId=null; renderPanel(); }},"Vazgeç"):null),pErr);
+    const mine=el("ul",{class:"mine"},...myProducts.map(it=>el("li",{class:it.id===editId?"editing":null},
       el("div",{class:"t"},it.photos[0]?el("img",{src:photoURL(it.photos[0]),alt:""}):flowerThumb(it.species,it.color)),
-      el("div",null,el("b",{text:it.name}),el("div",{class:"muted",text:`${fmtTL(it.price)} · stok ${it.stock}`})),
-      el("button",{class:"btn ghost",type:"button","aria-label":`${it.name} ürününü kaldır`,onclick:async e=>{
-        if(busy) return; busy=true; e.target.disabled=true;
-        const {error}=await sb.from("products").delete().eq("id",it.id);
-        if(!error && it.photos.length) await sb.storage.from("product-photos").remove(it.photos);
-        busy=false; setFlash(error?"Ürün kaldırılamadı.":"Ürün kaldırıldı."); await loadMine(); renderPanel(); loadMarket();
-      }},"Kaldır"))));
+      el("div",null,el("b",{text:it.name}),el("div",{class:"muted",text:`${fmtTL(it.price)} · ${it.stock>0?`stok ${it.stock}`:"tükendi"}`})),
+      el("div",{class:"acts"},
+        el("button",{class:"btn ghost",type:"button","aria-label":`${it.name} ürününü düzenle`,onclick:()=>{
+          if(busy) return; editId=it.id; renderPanel();
+          document.getElementById("prodform")?.scrollIntoView({behavior:reduced?"auto":"smooth",block:"start"}); document.getElementById("p-name")?.focus({preventScroll:true});
+        }},"Düzenle"),
+        el("button",{class:"btn ghost",type:"button","aria-label":`${it.name} ürününü kaldır`,onclick:async e=>{
+          if(busy) return;
+          if(!confirm(`“${it.name}” vitrinden kaldırılsın mı? Bu geri alınamaz.`)) return;
+          busy=true; e.target.disabled=true;
+          const {error}=await sb.from("products").delete().eq("id",it.id);
+          if(!error && it.photos.length) await sb.storage.from("product-photos").remove(it.photos);
+          if(!error && editId===it.id) editId=null;
+          busy=false; setFlash(error?"Ürün kaldırılamadı.":"Ürün kaldırıldı."); await loadMine(); renderPanel(); loadMarket();
+        }},"Kaldır")))));
     right.append(prodForm,el("h3",{style:"margin-top:30px",text:`Vitrindeki ürünlerin (${myProducts.length})`}),myProducts.length?mine:el("p",{class:"muted",text:"Henüz ürün yok."}));
   }
   const fl=flash; flash="";
@@ -1072,6 +1186,11 @@ async function reencode(file){
 const VIEWS=["rehber","renkler","pazar","panel"];
 function route(){
   const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"rehber";
+  // başka bölüme geçince bitki adresi bırakılır (/bitki/x#pazar -> /#pazar); rehbere dönünce bitkinin adresi geri gelir
+  if(!isAuthHash()){
+    if(v!=="rehber"&&location.pathname!=="/"){ history.replaceState(null,"","/#"+v); document.title=SITE_TITLE; }
+    else if(v==="rehber"&&current&&!current.ai&&location.hash) syncUrl("replace");
+  }
   VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("on",x===v));
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel();
@@ -1079,13 +1198,21 @@ function route(){
   if(v!=="rehber") scrollTo({top:0});
 }
 addEventListener("hashchange",route);
-// Supabase oturum dönüşü URL'de #access_token… bırakabilir; yönlendirmeden önce temizlenir
+// geri/ileri: adresteki bitkiyi yeniden aç
+addEventListener("popstate",()=>{ const p=plantFromUrl(); if(p&&(p.f!==current||p.ci!==currentColor)) showFlower(p.f,p.ci,{history:"none"}); route(); });
+// Supabase'in e-posta dönüşü URL'de #access_token… bırakır; oturum açılınca panele geçilir
+const AUTH_RETURN=isAuthHash();
+const start=plantFromUrl();
+if(!start&&location.pathname!=="/"&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
 route();
-showFlower(BY_ID.zambak,0);
+showFlower(start?.f||BY_ID.zambak,start?.ci||0,{history:start?"replace":"none"});
 loadMarket();
 if(sb){
-  sb.auth.onAuthStateChange((_e,s)=>{ setTimeout(async()=>{ // supabase-js: geri çağrı içinde doğrudan sorgu beklenmez
+  sb.auth.onAuthStateChange((event,s)=>{ setTimeout(async()=>{ // supabase-js: geri çağrı içinde doğrudan sorgu beklenmez
     session=s; document.getElementById("who").textContent=s?.user?.email||"";
-    await loadMine(); if(location.hash==="#panel"||!VIEWS.includes(location.hash.slice(1))) { if(s && !VIEWS.includes(location.hash.slice(1))) location.hash="panel"; renderPanel(); }
+    if(event==="PASSWORD_RECOVERY") authMode="newpass"; // şifre sıfırlama bağlantısından gelindi
+    await loadMine();
+    if((AUTH_RETURN||authMode==="newpass")&&s&&location.hash!=="#panel") location.hash="panel";
+    if(location.hash==="#panel") renderPanel();
   },0); });
 }
