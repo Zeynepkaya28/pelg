@@ -1858,8 +1858,10 @@ function renderBrowse(){
   document.getElementById("bcount").textContent=`${list.length} bitki`+(petMode&&before>list.length?` · ${before-list.length} zehirli bitki gizlendi`:"");
   const grid=document.getElementById("pgrid");
   if(!list.length){ grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Bu seçime uyan bitki yok"}),el("p",{text:"Işık ya da sulama süzgecini “Hepsi” yapmayı dene."}))); return; }
-  grid.replaceChildren(...list.map(f=>{
-    const img=el("img",{alt:"",decoding:"async"}); browseThumb(f,img);
+  grid.replaceChildren(...list.map((f,i)=>{
+    const img=el("img",{alt:"",decoding:"async"});
+    // ilk 8 kart hemen; gerisi ekrana yaklaşınca
+    if(i<8) plantMedia(f).then(m=>{ if(m.photos[0]){ img.src=m.photos[0].thumb; img.alt=`${f.name} fotoğrafı`; } }); else browseThumb(f,img);
     return el("a",{class:"pcard",href:`/bitki/${f.id}`,onclick:e=>{ e.preventDefault(); history.pushState(null,"",plantPath(f,0)); showFlower(f,0,{history:"none"}); route(); scrollTo({top:0}); }},
       el("span",{class:"pc-ph"},img,isPetSafe(f)?el("span",{class:"pc-pet",title:"Kedi ve köpekler için zehirsiz"},svg(ICON.paw)):null),
       el("span",{class:"pc-body"},el("b",{text:f.name}),el("i",{text:f.latin}),
