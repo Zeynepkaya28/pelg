@@ -283,3 +283,27 @@ footer nav a{color:var(--ink)}
 .shophead .about{max-width:62ch}
 .modal-info dd a{color:var(--ink)}
 .mine .stats{font-size:.82rem;color:var(--ink-2);margin-top:2px}
+
+/* ---------- bitkilerim ---------- */
+nav.tabs .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:var(--petal);color:#fff;font-size:.75rem;font-weight:700;vertical-align:1px}
+.myplant{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 26px}
+.mylist{list-style:none;margin:0;padding:0;display:grid;gap:12px;max-width:820px}
+.mylist li{display:grid;grid-template-columns:40px 1fr auto;gap:16px;align-items:center;padding:16px 18px;border-radius:var(--r-md);background:var(--paper)}
+.mylist li.due{outline:2px solid var(--pollen)}
+.mylist .c{width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(29,58,42,.2)}
+.mylist .nm{font-weight:700;font-size:1.1rem;color:var(--ink);text-decoration:none}
+.mylist .nm:hover{text-decoration:underline;text-decoration-color:var(--pollen);text-decoration-thickness:3px}
+.mylist .when{font-weight:600}
+.mylist .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.mylist select{padding:8px 10px;border-radius:999px;border:1.5px solid var(--ink);background:var(--paper)}
+.mytools{margin:22px 0 8px}
+@media (max-width:640px){ .mylist li{grid-template-columns:40px 1fr} .mylist .acts{grid-column:1/-1;justify-content:flex-start} }
+.season{border-left:4px solid var(--pollen);padding:6px 0 6px 16px;margin:0 0 26px}
+.season p{margin:4px 0 0;max-width:60ch}
+.card.meanings{margin-top:32px}
+.meanings details{border-top:1px solid var(--line);padding:10px 0}
+.meanings summary{cursor:pointer;font-weight:650}
+.meanings .mrow{display:grid;grid-template-columns:22px 90px 1fr auto;gap:10px;align-items:center;margin:8px 0}
+.meanings .mrow .c{width:22px;height:22px;border-radius:50%;border:1px solid var(--line)}
+.meanings .mrow input{padding:9px 12px;border-radius:var(--r-sm);border:1.5px solid rgba(29,58,42,.35);background:#fff;min-width:0}
+@media (max-width:560px){ .meanings .mrow{grid-template-columns:22px 1fr} .meanings .mrow input,.meanings .mrow .btn{grid-column:1/-1} }

@@ -1,0 +1,20 @@
+{
+  "name": "Sera Defteri",
+  "short_name": "Sera Defteri",
+  "description": "Türkçe bitki bakım rehberi, sulama hatırlatıcısı ve çiçekçi vitrini.",
+  "lang": "tr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#D7E3DA",
+  "theme_color": "#1D3A2A",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Bitkilerim", "short_name": "Bitkilerim", "url": "/#bitkilerim" },
+    { "name": "Çiçekçiler", "short_name": "Çiçekçiler", "url": "/#pazar" }
+  ]
+}

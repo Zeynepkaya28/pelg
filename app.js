@@ -134,6 +134,27 @@ const FLOWERS = [
   toxic:"Evcil hayvanlar için zehirsizdir.",
   shape:{t:"tree",center:"#3D4A26"}}
 ];
+/* Mevsim notları (Türkiye, kuzey yarımküre): ilkbahar mart–mayıs, yaz haziran–ağustos, sonbahar eylül–kasım, kış aralık–şubat */
+const SEASONS = {
+  zambak:{ilkbahar:"Toprak ısınınca soğanları 15–20 cm derine dik; filizler çıkınca düzenli sula.",yaz:"Çiçekler solunca yalnızca çiçek başını kes; yaprakları bırak ki soğan güç toplasın.",sonbahar:"Gövde sararınca yerden 5 cm yukarıdan kes. Yeni soğan dikimi için de uygun zaman.",kis:"Soğuk bölgelerde toprağı malçla ört; saksıdakileri donmayan, serin bir yere al."},
+  gul:{ilkbahar:"Gözler kabarınca buda: kurumuş, zayıf ve çapraz dalları al, ardından gübre ver.",yaz:"Solan çiçekleri ilk beş yapraklı yaprağın üstünden kes; sıcakta sabah erken derin sula.",sonbahar:"Gübrelemeyi bırak ki dallar kışa odunlaşsın; dökülen hastalıklı yaprakları topla.",kis:"Soğuk bölgelerde aşı noktasının çevresine toprak ya da malç doldur."},
+  lale:{ilkbahar:"Çiçek solunca tohum başını kopar; yaprakları kendiliğinden sararana kadar kesme.",yaz:"Yapraklar kuruyunca soğanları sökebilirsin; serin, kuru ve havadar bir yerde sakla.",sonbahar:"Ekim–kasım dikim zamanı: soğanları 15 cm derine, sivri ucu yukarı gelecek şekilde dik.",kis:"Soğuk dönem çiçeklenme için gerekli; saksıdaki soğanları sıcak eve alma."},
+  orkide:{ilkbahar:"Çiçeklenme bittiyse ve kökler saksıyı doldurduysa kabuk harcıyla saksı değiştir.",yaz:"Öğle güneşinden koru; sıcak günlerde nemi artır ama yaprak arasında su bırakma.",sonbahar:"Gece sıcaklığının birkaç hafta 15–18 °C'ye düşmesi yeni çiçek dalını tetikler.",kis:"Kaloriferin üstünden ve soğuk camdan uzak tut; sulamayı biraz seyrelt."},
+  papatya:{ilkbahar:"Kalabalıklaşan öbekleri bölerek çoğalt; tohum ekimi için de uygun dönem.",yaz:"Solan çiçekleri kestikçe yenisi gelir; kuraklıkta derin sula.",sonbahar:"Çiçeklenme bitince gövdeleri yere yakın kes.",kis:"Soğuğa dayanıklıdır; yalnızca su tutan toprakta çürümemesine dikkat et."},
+  aycicegi:{ilkbahar:"Don tehlikesi geçince tohumları doğrudan yerine, 2–3 cm derine ek.",yaz:"Uzun boylu çeşitleri desteğe bağla; çiçeklenirken bol su ister.",sonbahar:"Tablanın arkası sararınca tablayı kes ve kurut; tohumları kuşlardan böyle korursun.",kis:"Tek yıllıktır; kurumuş bitkiyi sök, gelecek yıl başka bir yere ek."},
+  lavanta:{ilkbahar:"Yeni sürgünler görününce hafif buda; odunlaşmış kısma kesme.",yaz:"Kurutmak için çiçekleri yarı açıkken kes; çiçeklenme sonrası şekil budaması yap.",sonbahar:"Gübre verme; toprağın süzek olduğundan, su birikmediğinden emin ol.",kis:"Asıl düşmanı soğuk değil ıslaklıktır; saksıdakileri yağmurdan koru, az sula."},
+  karanfil:{ilkbahar:"Tepe uçlarını çimdikle; daha gür ve çok dallı olur.",yaz:"Solan çiçekleri kes; kökü sula, yaprakları kuru tut.",sonbahar:"Çelikle çoğaltmak için uygun zaman.",kis:"Saksıdakileri serin ve aydınlık bir yerde tut, az sula."},
+  sumbul:{ilkbahar:"Çiçek solunca sapı kes; yaprakları kendiliğinden sararana kadar bırak.",yaz:"Soğanlar dinlenmede; sulamaya gerek yok.",sonbahar:"Soğanları 10–15 cm derine dik. İçeride çiçek açtırmak için saksıya alıp serin ve karanlık yerde köklendir.",kis:"Köklenen saksıları filizler 5 cm olunca aydınlığa al."},
+  nergis:{ilkbahar:"Çiçek solunca baş kısmını kopar; yaprakları en az altı hafta kesme.",yaz:"Kalabalık öbekleri yapraklar kuruyunca söküp ayırabilirsin.",sonbahar:"Eylül–ekim dikim zamanı: soğan boyunun 2–3 katı derine.",kis:"Soğuğa dayanıklıdır; ek bir şey gerekmez."},
+  kasimpati:{ilkbahar:"Eski öbekleri böl ya da çelikle çoğalt.",yaz:"Temmuz ortasına kadar uçları çimdikle; daha toplu ve çok çiçekli olur.",sonbahar:"Asıl çiçeklenme zamanı: solan çiçekleri temizle, toprağı nemli tut.",kis:"Çiçek bitince gövdeleri 10 cm'ye kes; soğukta kökü malçla koru."},
+  ortanca:{ilkbahar:"Yalnızca kurumuş dalları ve eski çiçek başlarını al; çoğu çeşit geçen yılın dalında çiçek açar.",yaz:"Sabah güneşi, öğleden sonra gölge; sıcakta her gün sulamak gerekebilir.",sonbahar:"Gübrelemeyi bırak. Mavi renk istiyorsan toprağı asidik tut.",kis:"Kuru çiçek başlarını bahara kadar bırak; altındaki tomurcukları dondan korur."},
+  menekse:{ilkbahar:"Saksı değiştirme ve yaprak çeliğiyle çoğaltma zamanı.",yaz:"Doğrudan güneşten koru; oda sıcaklığındaki suyla alttan sula.",sonbahar:"Günler kısalınca daha aydınlık bir pencereye taşı.",kis:"Soğuk camdan uzak tut; 16 °C'nin altına düşmesin."},
+  gerbera:{ilkbahar:"Daha büyük saksıya alırken kök boğazını gömme.",yaz:"Bol ışık ister; solan çiçekleri sapıyla birlikte dibinden çek.",sonbahar:"Sulamayı azalt; yaprakların üstüne su gelmesin.",kis:"İçeride serin ve aydınlık bir yerde dinlendir, az sula."},
+  sakayik:{ilkbahar:"Ağır çiçekler eğilmesin diye filizlenirken destek halkası koy.",yaz:"Çiçek solunca baş kısmını kes; yaprakları sonbahara kadar bırak.",sonbahar:"Dikim ve bölme zamanı. Gözler toprağın en fazla 5 cm altında kalsın; daha derine gömülürse çiçek vermez.",kis:"Yaprakları yerden kes; soğuk dönem çiçeklenme için gerekli."},
+  zeytin:{ilkbahar:"Budama zamanı: ağacın içini havalandır, kurumuş dalları al.",yaz:"Kuraklığa dayanıklıdır; saksıdakileri toprak tamamen kuruyunca derin sula.",sonbahar:"Hasat zamanı (ekim–aralık); gübrelemeyi bırak.",kis:"Genç ağaçlar −7 °C'nin altında zarar görebilir; saksıdakileri korunaklı bir yere al."}
+};
+const SEASON_NAMES={ilkbahar:"İlkbahar",yaz:"Yaz",sonbahar:"Sonbahar",kis:"Kış"};
+const seasonOf=(d=new Date())=>["kis","kis","ilkbahar","ilkbahar","ilkbahar","yaz","yaz","yaz","sonbahar","sonbahar","sonbahar","kis"][d.getMonth()];
 const BY_ID = Object.fromEntries(FLOWERS.map(f=>[f.id,f]));
 const SHAPES = ["lily","rose","tulip","orchid","daisy","sunflower","lavender","carnation","hyacinth","narcissus","mum","hydrangea","violet","gerbera","peony","tree"];
 const CATS = ["Kesme çiçek","Saksı çiçeği","Buket","Ağaç / fidan","Soğan / tohum","Diğer"];
@@ -587,11 +608,13 @@ function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
       el("dt",{text:"Nem"}),el("dd"),el("dd",{class:"txt",text:C.humidity}),
       el("dt",{text:"Besin"}),el("dd"),el("dd",{class:"txt",text:C.feed})
     ),
+    SEASONS[f.id]?el("div",{class:"season"},el("b",{text:`Bu mevsim · ${SEASON_NAMES[seasonOf()]}`}),el("p",{text:SEASONS[f.id][seasonOf()]})):null,
     el("div",{class:"twin"},
       el("div",null,el("h3",{text:"Ona iyi gelenler"}),el("ul",null,f.good.map(g=>el("li",null,svg(ICON.yes),g)))),
       el("div",null,el("h3",{text:"Ondan uzak tut"}),el("ul",null,f.bad.map(g=>el("li",null,svg(ICON.no),g))))
     ),
     el("div",{class:"toxic"+(isSafe?" safe":"")},svg(isSafe?ICON.paw:ICON.warn),el("div",null,el("b",{text:"Evcil hayvanlar: "}),f.toxic)),
+    BY_ID[f.id]?myPlantButton(f):null,
     askBox(f)
   );
   renderMeaning(); loadMedia(f);
@@ -1054,6 +1077,42 @@ async function loadMine(){
       product:{id:x.product.id,name:clampStr(x.product.name,60),photos:(Array.isArray(x.product.photos)?x.product.photos:[]).filter(ph=>PHOTO_RE.test(ph)),shop:clampStr(x.product.shop?.name,60)}}));
   }
 }
+/* çiçek anlamları: veritabanındaki sürüm app.js'teki yedeğin yerine geçer */
+async function loadMeanings(){
+  if(!sb) return;
+  const {data,error}=await sb.from("flower_meanings").select("flower_id,color,meaning");
+  if(error||!Array.isArray(data)) return; // olmazsa koddaki anlamlar kalır
+  let changed=false;
+  for(const r of data){
+    const f=BY_ID[r.flower_id]; if(!f) continue;
+    const c=f.colors.find(x=>x.n===r.color); const m=clampStr(r.meaning,120);
+    if(c&&m&&c.m!==m){ c.m=m; gTrie.insert(m,f.id); changed=true; }
+  }
+  if(!changed) return;
+  renderMeaning();
+  if(document.getElementById("v-renkler").classList.contains("on")) renderColors();
+}
+/* yönetici: çiçek anlamlarını düzenle */
+function meaningsCard(){
+  const msg=el("p",{class:"ok",role:"status"});
+  return el("div",{class:"card meanings"},
+    el("h3",{text:"Çiçek anlamları"}),
+    el("p",{class:"muted",text:"Her rengin çiçek dilindeki anlamı. Kaydettiğin değişiklik rehberde ve Renklerin dili bölümünde hemen görünür."}),
+    msg,
+    ...FLOWERS.map(f=>el("details",null,el("summary",{text:`${f.name} (${f.colors.length} renk)`}),
+      ...f.colors.map(c=>{
+        const inp=el("input",{maxlength:"120",value:c.m,"aria-label":`${c.n} ${f.name} anlamı`});
+        const save=el("button",{class:"btn ghost",type:"button",onclick:async()=>{
+          const m=clampStr(inp.value,120); if(m.length<2){ msg.className="err"; msg.textContent="Anlam en az 2 karakter olmalı."; return; }
+          save.disabled=true;
+          const {error}=await sb.from("flower_meanings").upsert({flower_id:f.id,color:c.n,meaning:m},{onConflict:"flower_id,color"});
+          save.disabled=false;
+          if(error){ msg.className="err"; msg.textContent=`${c.n} ${f.name} kaydedilemedi.`; return; }
+          c.m=m; gTrie.insert(m,f.id); renderMeaning(); msg.className="ok"; msg.textContent=`${c.n} ${f.name.toLocaleLowerCase("tr")}: “${m}” kaydedildi.`;
+        }},"Kaydet");
+        return el("div",{class:"mrow"},el("span",{class:"c",style:`background:${safeHex(c.hex)}`}),el("span",{class:"n",text:c.n}),inp,save);
+      }))));
+}
 /* yönetici: bildirilen ürünler */
 function reportsCard(){
   const fmt=t=>new Intl.DateTimeFormat("tr-TR",{dateStyle:"medium",timeStyle:"short"}).format(t);
@@ -1294,7 +1353,7 @@ function renderPanel(){
     right.append(prodForm,el("h3",{style:"margin-top:30px",text:`Vitrindeki ürünlerin (${myProducts.length})`}),myProducts.length?mine:el("p",{class:"muted",text:"Henüz ürün yok."}));
   }
   const fl=flash; flash="";
-  box.replaceChildren(fl?el("p",{class:"ok",role:"status",style:"font-size:1.05rem;margin:0 0 16px",text:fl}):"",el("div",{class:"panel"},shopForm,right),isAdmin?reportsCard():"");
+  box.replaceChildren(fl?el("p",{class:"ok",role:"status",style:"font-size:1.05rem;margin:0 0 16px",text:fl}):"",el("div",{class:"panel"},shopForm,right),isAdmin?reportsCard():"",isAdmin?meaningsCard():"");
 }
 // Görseli yeniden kodla: boyutu küçült, EXIF/konum ve gömülü veriyi at
 async function reencode(file){
@@ -1306,9 +1365,100 @@ async function reencode(file){
 }
 
 /* =========================================================
+   9b. BİTKİLERİM — sulama hatırlatıcısı (yalnızca bu tarayıcıda)
+   ========================================================= */
+const MY_KEY="sera.bitkilerim.v1", DAY=864e5;
+const WATER_DAYS={1:14,2:7,3:3}; // bakım kartındaki su düzeyi -> varsayılan sulama aralığı (gün)
+const INTERVALS=[2,3,4,5,7,10,14,21];
+function loadMy(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(MY_KEY)||"[]");
+    return (Array.isArray(raw)?raw:[]).filter(x=>x&&BY_ID[x.id]).slice(0,60).map(x=>({
+      id:x.id, ci:Math.max(0,Math.min(BY_ID[x.id].colors.length-1,Math.floor(+x.ci||0))),
+      every:INTERVALS.includes(+x.every)?+x.every:WATER_DAYS[BY_ID[x.id].care.water[0]]||7,
+      last:Number.isFinite(+x.last)?+x.last:Date.now(), added:Number.isFinite(+x.added)?+x.added:Date.now()}));
+  }catch(e){ return []; }
+}
+function saveMy(list){ try{ localStorage.setItem(MY_KEY,JSON.stringify(list)); }catch(e){} paintDueBadge(); }
+const startOfDay=t=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+const nextDue=x=>startOfDay(x.last)+x.every*DAY;
+const daysLeft=x=>Math.round((nextDue(x)-startOfDay(Date.now()))/DAY);
+function paintDueBadge(){
+  const n=loadMy().filter(x=>daysLeft(x)<=0).length, b=document.getElementById("duebadge");
+  b.hidden=!n; b.textContent=n?String(n):""; b.setAttribute("aria-label",n?`${n} bitki bugün su istiyor`:"");
+}
+function myPlantButton(f){
+  const has=()=>loadMy().some(x=>x.id===f.id);
+  const btn=el("button",{type:"button",class:"btn ghost",onclick:()=>{
+    let list=loadMy();
+    if(has()){ location.hash="bitkilerim"; return; }
+    list.push({id:f.id,ci:currentColor,every:WATER_DAYS[f.care.water[0]]||7,last:Date.now(),added:Date.now()});
+    saveMy(list); paint();
+  }});
+  const paint=()=>{ btn.textContent=has()?"Bitkilerimde ✓ — listeye git":"Bitkilerime ekle"; };
+  paint();
+  return el("div",{class:"myplant"},btn,el("span",{class:"muted",text:`Varsayılan: ${WATER_DAYS[f.care.water[0]]||7} günde bir sulama hatırlatması`}));
+}
+function dueText(n){ return n<0?`${-n} gün gecikti`:n===0?"Bugün sulanmalı":n===1?"Yarın":`${n} gün sonra`; }
+function renderMy(){
+  const box=document.getElementById("mybox"), list=loadMy().sort((a,b)=>nextDue(a)-nextDue(b));
+  if(!list.length){
+    box.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Henüz bitki eklemedin"}),
+      el("p",{text:"Bakım rehberinde bir bitki aç ve “Bitkilerime ekle”ye bas. Sulama günü gelince burada ve sekmede gösteririz."}),
+      el("a",{class:"btn",href:"#rehber",style:"display:inline-block;text-decoration:none"},"Bakım rehberine git")));
+    return;
+  }
+  const fmt=t=>new Intl.DateTimeFormat("tr-TR",{weekday:"long",day:"numeric",month:"long"}).format(t);
+  const update=(id,fn)=>{ const l=loadMy(); const x=l.find(y=>y.id===id); if(x){ fn(x,l); saveMy(l.filter(y=>!y.gone)); } renderMy(); };
+  box.replaceChildren(
+    el("ul",{class:"mylist"},...list.map(x=>{
+      const f=BY_ID[x.id], c=f.colors[x.ci], n=daysLeft(x);
+      const sel=el("select",{"aria-label":`${f.name} sulama aralığı`,onchange:e=>update(x.id,y=>{ y.every=+e.target.value; })},
+        ...INTERVALS.map(d=>el("option",{value:String(d),selected:d===x.every},`${d} günde bir`)));
+      return el("li",{class:n<=0?"due":null},
+        el("span",{class:"c",style:`background:${safeHex(c.hex)}`}),
+        el("div",null,
+          el("a",{href:plantPath(f,x.ci),class:"nm",onclick:e=>{ e.preventDefault(); history.pushState(null,"",plantPath(f,x.ci)); showFlower(f,x.ci,{history:"none"}); route(); }},`${c.n} ${f.name.toLocaleLowerCase("tr")}`),
+          el("div",{class:"when",text:`${dueText(n)} · ${fmt(nextDue(x))}`}),
+          el("div",{class:"muted",text:f.care.water[1]})),
+        el("div",{class:"acts"},
+          el("button",{class:n<=0?"btn":"btn ghost",type:"button",onclick:()=>update(x.id,y=>{ y.last=Date.now(); })},"Suladım"),
+          sel,
+          el("button",{class:"linkbtn small",type:"button",onclick:()=>{ if(confirm(`${f.name} listenden çıkarılsın mı?`)) update(x.id,y=>{ y.gone=true; }); }},"Çıkar")));
+    })),
+    el("div",{class:"row mytools"},
+      el("button",{class:"btn ghost",type:"button",onclick:()=>downloadIcs(list)},"Takvimime ekle (.ics)"),
+      "Notification" in window&&Notification.permission!=="granted"&&Notification.permission!=="denied"
+        ?el("button",{class:"btn ghost",type:"button",onclick:async()=>{ await Notification.requestPermission(); notifyDue(true); renderMy(); }},"Hatırlatma bildirimine izin ver"):null),
+    el("p",{class:"muted",text:"Takvim dosyası, telefonunun takviminde her bitki için tekrarlayan bir sulama hatırlatması oluşturur; site kapalıyken de çalışır. Bildirim ise site açıldığında gösterilir."}));
+}
+/* .ics: her bitki için tekrarlayan, tüm gün süren etkinlik + sabah 9'da hatırlatma */
+function downloadIcs(list){
+  const d=t=>{ const x=new Date(t); return `${x.getFullYear()}${String(x.getMonth()+1).padStart(2,"0")}${String(x.getDate()).padStart(2,"0")}`; };
+  const esc=s=>String(s).replace(/[\\;,]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+Z$/,"Z");
+  const ev=list.map(x=>{ const f=BY_ID[x.id], due=Math.max(nextDue(x),startOfDay(Date.now()));
+    return ["BEGIN:VEVENT",`UID:${x.id}-${x.added}@sera-defteri`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${d(due)}`,`DTEND;VALUE=DATE:${d(due+DAY)}`,
+      `RRULE:FREQ=DAILY;INTERVAL=${x.every}`,`SUMMARY:${esc(f.name+" — sulama günü")}`,`DESCRIPTION:${esc(f.care.water[1])}`,
+      "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${esc(f.name+" su istiyor")}`,"TRIGGER:PT9H","END:VALARM","END:VEVENT"].join("\r\n"); });
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sera Defteri//Bitkilerim//TR","CALSCALE:GREGORIAN",...ev,"END:VCALENDAR"].join("\r\n")+"\r\n";
+  const url=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"}));
+  const a=el("a",{href:url,download:"bitkilerim.ics"}); document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+/* site açıldığında, günde en fazla bir kez: bugün su isteyen bitkiler */
+async function notifyDue(force=false){
+  if(!("Notification" in window)||Notification.permission!=="granted") return;
+  const due=loadMy().filter(x=>daysLeft(x)<=0); if(!due.length) return;
+  const today=new Date().toDateString();
+  try{ if(!force&&localStorage.getItem("sera.notified")===today) return; localStorage.setItem("sera.notified",today); }catch(e){}
+  const body=due.map(x=>BY_ID[x.id].name).join(", ")+(due.length>1?" su istiyor.":" su istiyor.");
+  try{ const reg=await navigator.serviceWorker?.getRegistration?.(); if(reg) reg.showNotification("Sulama günü",{body,icon:"/favicon.svg",tag:"sulama"}); else new Notification("Sulama günü",{body,icon:"/favicon.svg"}); }catch(e){}
+}
+
+/* =========================================================
    10. YÖNLENDİRME + BAŞLANGIÇ
    ========================================================= */
-const VIEWS=["rehber","renkler","pazar","panel"];
+const VIEWS=["rehber","renkler","pazar","bitkilerim","panel"];
 const SHOP_RE=/^\/dukkan\/([0-9a-f-]{36})\/?$/;
 async function loadShopInfo(id){
   if(PRODUCTS.some(p=>p.shop.id===id)||!sb) return;
@@ -1330,7 +1480,7 @@ function route(){
   if(nextShop!==shopFilter){ shopFilter=nextShop; shopInfo=null; if(shopFilter) loadShopInfo(shopFilter); else if(v==="pazar") document.title=SITE_TITLE; }
   VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("on",x===v));
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
-  if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel();
+  if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel(); if(v==="bitkilerim") renderMy();
   if(stage){ stage.visible = v==="rehber"; if(stage.visible) { stage.resize(); stage.loop(); } }
   if(v!=="rehber") scrollTo({top:0});
 }
@@ -1344,6 +1494,9 @@ if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!AUTH_RETU
 route();
 showFlower(start?.f||BY_ID.zambak,start?.ci||0,{history:start?"replace":"none"});
 loadMarket();
+paintDueBadge(); notifyDue(); loadMeanings();
+// çevrimdışı çalışma ve "ana ekrana ekle" için
+if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 if(sb){
   sb.auth.onAuthStateChange((event,s)=>{ setTimeout(async()=>{ // supabase-js: geri çağrı içinde doğrudan sorgu beklenmez
     session=s; document.getElementById("who").textContent=s?.user?.email||"";
