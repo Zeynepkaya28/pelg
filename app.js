@@ -154,6 +154,26 @@ const SEASONS = {
   zeytin:{ilkbahar:"Budama zamanı: ağacın içini havalandır, kurumuş dalları al.",yaz:"Kuraklığa dayanıklıdır; saksıdakileri toprak tamamen kuruyunca derin sula.",sonbahar:"Hasat zamanı (ekim–aralık); gübrelemeyi bırak.",kis:"Genç ağaçlar −7 °C'nin altında zarar görebilir; saksıdakileri korunaklı bir yere al."}
 };
 const SEASON_NAMES={ilkbahar:"İlkbahar",yaz:"Yaz",sonbahar:"Sonbahar",kis:"Kış"};
+/* Sağlık ve kullanım: geleneksel kullanım + kanıt düzeyi + uyarı. Bilgi amaçlıdır, tıbbi tavsiye değildir.
+   level: "güçlü" | "sınırlı" | "yok" (bilimsel kanıt) */
+const HEALTH = {
+  zambak:{uses:["Akdeniz zambağının (Lilium candidum) çiçekleri halk arasında zeytinyağında bekletilip “zambak yağı” olarak yanık, çatlak ve morluklara dıştan sürülür.","Geleneksel Çin tıbbında bazı zambak türlerinin soğanı öksürük ve uykusuzluk için kullanılır."],level:"sınırlı",note:"Bu kullanımları destekleyen klinik çalışma yok denecek kadar az.",caution:"Kediler için ölümcül zehirlidir: yaprak, çiçek, polen, hatta vazodaki su bile böbrek yetmezliğine yol açabilir. Ağızdan kullanma."},
+  gul:{uses:["Gül suyu (Rosa damascena) cilt toniği ve yatıştırıcı olarak, gül yağı aromaterapide kullanılır.","İlaçsız yetiştirilmiş güllerin taç yaprakları reçel ve şerbette kullanılır.","Yabani gülün meyvesi kuşburnu (Rosa canina) C vitamini bakımından zengindir; çayı halk arasında soğuk algınlığında içilir."],level:"sınırlı",note:"Kuşburnunun C vitamini içeriği iyi bilinir; eklem ağrısına etkisi üzerine birkaç küçük çalışma var. Gül suyunun cilde etkisi için kanıt sınırlı.",caution:"Çiçekçiden alınan güller ilaçlanmış olabilir; taç yaprakları yenmez."},
+  lale:{uses:["Bilinen bir tıbbi kullanımı yoktur; süs bitkisidir.","1944–45 Hollanda kıtlığında soğanı yiyecek yerine yenmiştir; bugün önerilmez."],level:"yok",note:"Tıbbi kullanım için kanıt yok.",caution:"Soğanı ve gövdesi ciltte kaşıntılı tahriş (“lale parmağı”) yapabilir; kedi ve köpekler için zehirlidir."},
+  orkide:{uses:["Saksı orkidesinin (Phalaenopsis) bilinen bir tıbbi kullanımı yoktur.","Salep, başka orkide cinslerinin (Orchis vb.) yumrularından yapılır; doğadan aşırı toplanması bu türleri tehlikeye sokmuştur.","Vanilya da bir orkidenin (Vanilla planifolia) meyvesidir."],level:"yok",note:"Phalaenopsis için tıbbi kullanım kanıtı yok.",caution:"Phalaenopsis kedi ve köpekler için zehirsiz kabul edilir."},
+  papatya:{uses:["Rehberdeki papatya, iri çiçekli öküzgözü papatyasıdır (Leucanthemum vulgare). Halk arasında genç yaprakları salataya katılır, çiçeği öksürük ve gaz için çay olarak içilmiştir.","Bilinen “papatya çayı” ise başka bir bitkiden, Alman papatyasından (Matricaria chamomilla) yapılır: hafif yatıştırıcı ve mide rahatlatıcı olarak kullanılır."],level:"sınırlı",note:"Alman papatyası için hafif kaygı ve uyku üzerine bazı klinik çalışmalar var; öküzgözü papatyası için kanıt yok.",caution:"Papatyagillere (Asteraceae) alerjisi olanlarda alerji yapabilir. Hamilelikte ve kan sulandırıcı kullanıyorsan doktora danış."},
+  aycicegi:{uses:["Çekirdeği E vitamini, magnezyum ve doymamış yağ bakımından zengindir.","Ayçiçek yağı mutfakta, ayrıca ciltte nemlendirici olarak kullanılır."],level:"güçlü",note:"Besin değeri iyi belgelenmiştir; çekirdek ve yağ bir tedavi değil, beslenmenin parçasıdır.",caution:"Tuzlu çekirdek fazla tüketilince tuz alımı artar. Bitki zehirsizdir."},
+  lavanta:{uses:["Lavanta yağı aromaterapide gerginlik ve uyku sorunları için koklanır ya da seyreltilerek masajda kullanılır.","Kurutulmuş çiçekleri çay, kese ve güve kovucu olarak kullanılır."],level:"sınırlı",note:"Standart lavanta yağı kapsülleri (Silexan) üzerine kaygı bozukluğunda olumlu klinik çalışmalar var; koklamanın etkisi için kanıt daha zayıf.",caution:"Saf yağ içilmez ve cilde seyreltilmeden sürülmez; tahriş yapabilir. Kedi ve köpekler için zararlıdır."},
+  karanfil:{uses:["Çiçek karanfilin (Dianthus caryophyllus) taç yaprakları yenilebilir; tatlı ve salatalarda süs olarak kullanılır.","Diş ağrısında kullanılan baharat “karanfil” ise bambaşka bir bitkidir: karanfil ağacının (Syzygium aromaticum) kurutulmuş tomurcuğu. Etkisi içindeki öjenolden gelir."],level:"yok",note:"Çiçek karanfil için tıbbi kanıt yok; baharat karanfildeki öjenolün diş ağrısında uyuşturucu etkisi bilinir.",caution:"Kedi ve köpeklerde hafif mide bulantısı yapabilir."},
+  sumbul:{uses:["Bilinen bir tıbbi kullanımı yoktur; kokusu nedeniyle parfümcülükte kullanılır."],level:"yok",note:"Tıbbi kullanım için kanıt yok.",caution:"Soğanı zehirlidir ve ciltte tahriş yapar; soğanlarla eldivenle çalış. Evcil hayvanlardan uzak tut."},
+  nergis:{uses:["Alzheimer hastalığında kullanılan galantamin etken maddesi nergis ve kardelen soğanlarından elde edilebilir; ama bu, laboratuvarda saflaştırılmış onaylı bir ilaçtır.","Halk arasında soğanı haricen yara ve çıbanlara sürülmüştür."],level:"yok",note:"Galantamin onaylı bir ilaçtır; bitkinin kendisini kullanmanın güvenli bir yolu yoktur.",caution:"Bütün bitki, özellikle soğanı çok zehirlidir (likorin). Soğanının taze soğan sanılıp yenmesiyle zehirlenmeler olur. Asla ağızdan kullanma."},
+  kasimpati:{uses:["Çin'de Chrysanthemum morifolium çiçeğinden yapılan “ju hua” çayı, geleneksel tıpta soğuk algınlığı, baş ağrısı ve göz yorgunluğu için içilir.","Doğal böcek öldürücü piretrin, akrabası pire otundan (Tanacetum cinerariifolium) elde edilir."],level:"sınırlı",note:"Kasımpatı çayı için klinik kanıt sınırlı.",caution:"Papatyagillere alerjisi olanlarda alerji yapabilir; kedi ve köpekler için zehirlidir."},
+  ortanca:{uses:["Japonya'da bir ortanca türünün (Hydrangea serrata) mayalanmış yapraklarından tatlı “amaça” çayı yapılır.","Kuzey Amerika'da başka bir türün kökü halk arasında böbrek taşı için kullanılmıştır."],level:"yok",note:"Bu kullanımlar için güvenilir klinik kanıt yok.",caution:"Yaprak ve çiçekleri siyanojenik glikozit içerir; yenirse kusma ve ishal yapabilir. Çocuk ve hayvanlardan uzak tut."},
+  menekse:{uses:["Afrika menekşesinin bilinen bir tıbbi kullanımı yoktur.","Öksürük şuruplarında ve tatlılarda kullanılan “kokulu menekşe” (Viola odorata) başka bir bitkidir."],level:"yok",note:"Tıbbi kullanım için kanıt yok.",caution:"Kedi ve köpekler için zehirsizdir."},
+  gerbera:{uses:["Bilinen bir tıbbi kullanımı yoktur; kesme çiçek olarak yetiştirilir.","NASA'nın 1989 “temiz hava” çalışmasında iç ortamdaki bazı kimyasalları azaltan bitkiler arasında anılır; ancak bir evdeki birkaç saksının etkisi çok küçüktür."],level:"yok",note:"Sağlık üzerine kanıt yok.",caution:"Kedi ve köpekler için zehirsizdir."},
+  sakayik:{uses:["Paeonia lactiflora'nın kökü (“bai shao”) geleneksel Çin tıbbında ağrı ve kramplar için kullanılır; içindeki paeoniflorin üzerine çalışmalar sürmektedir.","Taç yaprakları bazı mutfaklarda çay ve tatlılara katılır."],level:"sınırlı",note:"Laboratuvar ve küçük klinik çalışmalar var; güçlü kanıt yok.",caution:"Kök ve kabuğu evcil hayvanlarda kusma ve ishal yapabilir. Kan sulandırıcı kullanıyorsan doktora danışmadan kullanma."},
+  zeytin:{uses:["Sızma zeytinyağı Akdeniz beslenmesinin temelidir; kalp ve damar sağlığını desteklediği büyük çalışmalarla gösterilmiştir.","Zeytin yaprağı çayı ve özü halk arasında tansiyon ve kan şekeri için kullanılır."],level:"güçlü",note:"Zeytinyağı için güçlü kanıt var (PREDIMED gibi büyük çalışmalar); zeytin yaprağı için kanıt sınırlı.",caution:"Zeytin yaprağı özü tansiyon ve şeker ilaçlarının etkisini artırabilir; ilaç kullanıyorsan doktora danış."}
+};
 const seasonOf=(d=new Date())=>["kis","kis","ilkbahar","ilkbahar","ilkbahar","yaz","yaz","yaz","sonbahar","sonbahar","sonbahar","kis"][d.getMonth()];
 const BY_ID = Object.fromEntries(FLOWERS.map(f=>[f.id,f]));
 const SHAPES = ["lily","rose","tulip","orchid","daisy","sunflower","lavender","carnation","hyacinth","narcissus","mum","hydrangea","violet","gerbera","peony","tree"];
@@ -180,6 +200,10 @@ const svgNS="http://www.w3.org/2000/svg";
 function svg(markup){ // yalnızca sabit, koda gömülü SVG için
   const t=document.createElement("template"); t.innerHTML=markup.trim(); return t.content.firstChild;
 }
+// satır sonlarını koruyan sürüm (Vikipedi bölümleri için)
+const clampML=(s,max)=>typeof s==="string"?[...s].filter(ch=>{ const c=ch.charCodeAt(0); return c===10||(c>=32&&c!==127&&c!==8232&&c!==8233); }).join("").trim().slice(0,max):"";
+// replaceChildren boş değerleri "null" diye yazar; önce ayıkla
+const nodes=(...a)=>a.flat().filter(x=>x!=null&&x!==false&&x!=="");
 const clampStr=(s,max)=>typeof s==="string"?s.replace(/[\u0000-\u001F\u007F]/g," ").trim().slice(0,max):"";
 const HEX=/^#[0-9a-fA-F]{6}$/;
 const safeHex=(h,f="#cccccc")=>HEX.test(h||"")?h:f;
@@ -614,41 +638,89 @@ function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
   syncUrl(hist);
   const col=f.colors[currentColor];
   stage&&stage.build(f,col.hex);
-  // renkler
+  // renkler (yan sütun)
   swatches.replaceChildren(...f.colors.map((c,i)=>el("button",{class:"sw","aria-pressed":String(i===currentColor),onclick:()=>pickColor(i)},el("span",{class:"c",style:`background:${safeHex(c.hex)}`}),c.n)));
-  // bakım kartı
-  const C=f.care;
+  const C=f.care, inGuide=!!BY_ID[f.id];
   const isSafe=/zehirsiz/i.test(f.toxic);
-  const meaning=el("p",{class:"meaning",id:"meaning"});
-  sheet.replaceChildren(
-    el("div",{class:"kind"},f.kind, f.ai?el("span",{class:"ai-badge",text:"Yapay zekâ kartı — doğrulayın"}):null,
-      f.ai&&f.sources?.length?el("span",{class:"muted",text:` · Ham veri: ${f.sources.join(", ")}`}):null),
-    el("div",{class:"titlerow"},el("h2",{text:f.name}),BY_ID[f.id]?shareButton():null),
-    el("p",{class:"latin",text:f.latin}),
+  // büyük fotoğrafın üstündeki ad
+  document.getElementById("heroname").replaceChildren(...nodes(
+    el("span",{class:"kind"},f.kind),el("h2",{text:f.name}),el("p",{class:"latin",text:f.latin}),
+    f.ai?el("span",{class:"ai-badge",text:"Yapay zekâ kartı — doğrulayın"}):null,
+    f.enc?el("span",{class:"ai-badge",text:"Ansiklopedi kartı"}):null));
+  const careCard=(icon,label,lvl,text)=>text&&text!=="—"?el("div",{class:"care-card"},
+    el("div",{class:"cc-top"},icon?svg(icon):null,el("b",{text:label}),lvl?gauge(lvl[0],lvl[1]):null),el("p",{text})):null;
+  sheet.replaceChildren(...nodes(
     el("p",{class:"blurb",text:f.blurb}),
     el("div",{class:"wiki",id:"wiki"}),
-    meaning,
-    BY_ID[f.id]?el("div",{class:"related",id:"related"}):null,
-    el("h3",{text:"Bakım"}),
-    el("dl",{class:"care"},
-      el("dt",{text:"Işık"}),el("dd",null,gauge("sun",C.light[0])),el("dd",{class:"txt",text:C.light[1]}),
-      el("dt",{text:"Su"}),el("dd",null,gauge("drop",C.water[0])),el("dd",{class:"txt",text:C.water[1]}),
-      el("dt",{text:"Toprak"}),el("dd"),el("dd",{class:"txt",text:C.soil}),
-      el("dt",{text:"Sıcaklık"}),el("dd"),el("dd",{class:"txt",text:C.temp}),
-      el("dt",{text:"Nem"}),el("dd"),el("dd",{class:"txt",text:C.humidity}),
-      el("dt",{text:"Besin"}),el("dd"),el("dd",{class:"txt",text:C.feed})
-    ),
+    f.enc?null:el("section",{class:"block"},el("h3",{text:"Bakım"}),
+      el("div",{class:"care-grid"},
+        careCard(null,"Işık",["sun",C.light[0]],C.light[1]),
+        careCard(null,"Su",["drop",C.water[0]],C.water[1]),
+        careCard(CARE_ICON.soil,"Toprak",null,C.soil),
+        careCard(CARE_ICON.temp,"Sıcaklık",null,C.temp),
+        careCard(CARE_ICON.hum,"Nem",null,C.humidity),
+        careCard(CARE_ICON.feed,"Besin",null,C.feed))),
     SEASONS[f.id]?el("div",{class:"season"},el("b",{text:`Bu mevsim · ${SEASON_NAMES[seasonOf()]}`}),el("p",{text:SEASONS[f.id][seasonOf()]})):null,
-    el("div",{class:"twin"},
+    f.good?.length||f.bad?.length?el("div",{class:"twin"},
       el("div",null,el("h3",{text:"Ona iyi gelenler"}),el("ul",null,f.good.map(g=>el("li",null,svg(ICON.yes),g)))),
-      el("div",null,el("h3",{text:"Ondan uzak tut"}),el("ul",null,f.bad.map(g=>el("li",null,svg(ICON.no),g))))
-    ),
-    el("div",{class:"toxic"+(isSafe?" safe":"")},svg(isSafe?ICON.paw:ICON.warn),el("div",null,el("b",{text:"Evcil hayvanlar: "}),f.toxic)),
-    BY_ID[f.id]?myPlantButton(f):null,
-    askBox(f)
-  );
-  chose3d=false; renderMeaning(); loadMedia(f);
-  if(scroll && innerWidth<900) sheet.scrollIntoView({behavior:reduced?"auto":"smooth"});
+      el("div",null,el("h3",{text:"Ondan uzak tut"}),el("ul",null,f.bad.map(g=>el("li",null,svg(ICON.no),g))))):null,
+    healthBlock(f),
+    el("div",{id:"infoblocks"}), // API: hastalık ve zararlılar, botanik kimlik, Vikipedi bölümleri
+    f.enc?null:askBox(f)
+  ));
+  // yan sütun: zehirlilik, bitkilerim, paylaş
+  document.getElementById("sideextra").replaceChildren(...nodes(
+    f.toxic&&f.toxic!=="—"?el("div",{class:"toxic"+(isSafe?" safe":"")},svg(isSafe?ICON.paw:ICON.warn),el("div",null,el("b",{text:"Evcil hayvanlar: "}),f.toxic)):null,
+    el("div",{class:"side-acts"},inGuide?myPlantButton(f):null,inGuide?shareButton():null)));
+  chose3d=false; renderMeaning(); loadMedia(f); loadInfo(f);
+  if(scroll) document.querySelector(".hero").scrollIntoView({behavior:reduced?"auto":"smooth",block:"start"});
+}
+const CARE_ICON={
+  soil:`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 12h16v5H2z" fill="#B88B5A"/><path d="M10 12V5" stroke="#2E6B3F" stroke-width="1.6" stroke-linecap="round"/><path d="M10 7c0-2.5-2-4-4.5-4 0 2.5 2 4 4.5 4Z" fill="#6E9A5B"/></svg>`,
+  temp:`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5a2 2 0 0 1 4 0v8.2a4 4 0 1 1-4 0Z" fill="none" stroke="#1D3A2A" stroke-width="1.4"/><circle cx="10" cy="14.5" r="2" fill="#D46F8C"/><path d="M10 13V7" stroke="#D46F8C" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  hum:`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3c-2 3-3 4.6-3 6.2a3 3 0 0 0 6 0C9 7.6 8 6 6 3Zm8 4c-2 3-3 4.6-3 6.2a3 3 0 0 0 6 0C17 11.6 16 10 14 7Z" fill="#9CC0E3" stroke="#1D3A2A" stroke-width="1.1"/></svg>`,
+  feed:`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8h10l-1 9H6Z" fill="#E9AE35" stroke="#1D3A2A" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="#1D3A2A" stroke-width="1.2"/></svg>`
+};
+/* sağlık ve kullanım: el yazımı notlar (16 bitki) — Vikipedi bölümleri loadInfo ile altına eklenir */
+const LEVEL_TEXT={"güçlü":"Bilimsel kanıt: güçlü","sınırlı":"Bilimsel kanıt: sınırlı","yok":"Bilimsel kanıt: yok"};
+function healthBlock(f){
+  const h=HEALTH[f.id];
+  return el("section",{class:"block health",id:"health",hidden:!h},
+    el("h3",{text:"Sağlık ve kullanım"}),
+    h?el("div",null,
+      el("ul",{class:"uses"},...h.uses.map(u=>el("li",{text:u}))),
+      el("p",{class:"evidence"},el("span",{class:"lvl lvl-"+(h.level==="güçlü"?"hi":h.level==="sınırlı"?"mid":"no"),text:LEVEL_TEXT[h.level]})," ",h.note),
+      el("div",{class:"caution"},svg(ICON.warn),el("p",null,el("b",{text:"Dikkat: "}),h.caution))):null,
+    el("div",{id:"wikiuses"}),
+    el("p",{class:"disclaimer",text:"Bilgi amaçlıdır, tıbbi tavsiye değildir. Hiçbir bitkiyi doktora ya da eczacıya danışmadan ilaç olarak kullanma; hamileysen, emziriyorsan, çocuklarda ya da düzenli ilaç kullanıyorsan özellikle dikkat et."}));
+}
+/* API'den ek bilgi: botanik kimlik, Vikipedi'nin kullanım / zehirlilik / hastalık bölümleri */
+const INFO=new Map(); let infoToken=0;
+async function loadInfo(f){
+  const tok=++infoToken, box=document.getElementById("infoblocks"), usesBox=document.getElementById("wikiuses");
+  const [latin,tr]=LOOKUP[f.id]||[String(f.latin||"").replace(/\bspp?\.?$/,"").split(/[\/(]/)[0].trim().split(" ").slice(0,2).join(" "),f.name];
+  if(!/^[A-Za-z][A-Za-z .×-]{1,59}$/.test(latin)) return;
+  const key=latin+"|"+tr;
+  if(!INFO.has(key)) INFO.set(key,fetch(`/api/info?latin=${encodeURIComponent(latin)}&tr=${encodeURIComponent(tr)}`).then(r=>r.ok?r.json():null).catch(()=>null));
+  const d=await INFO.get(key); if(tok!==infoToken||!d||!box) return;
+  const okUrl=u=>/^https:\/\/([a-z]{2}\.wikipedia\.org|www\.wikidata\.org|www\.gbif\.org)\//.test(u||"")?u:null;
+  const secs=(Array.isArray(d.sections)?d.sections:[]).filter(s=>["uses","toxicity","pests"].includes(s.kind)&&["tr","en"].includes(s.lang)).map(s=>({...s,title:clampStr(s.title,80),text:clampML(s.text,1000),url:okUrl(s.url)}));
+  const secEl=s=>el("details",{class:"wsec"},
+    el("summary",null,s.lang==="en"?`${s.title} (İngilizce Vikipedi)`:`${s.title} (Vikipedi)`),
+    ...s.text.split("\n").map(t=>el("p",{text:t})),
+    el("p",{class:"muted"},s.url?el("a",{href:s.url,target:"_blank",rel:"noopener noreferrer"},"Kaynağın tamamı (CC BY-SA)"):null,
+      s.lang==="en"?" · Bu bölümün Türkçesi Vikipedi'de yok; çeviri için yapay zekâ özelliği açılınca otomatik çevrilecek.":""));
+  const uses=secs.filter(s=>s.kind!=="pests"), pests=secs.filter(s=>s.kind==="pests");
+  if(usesBox&&uses.length){ document.getElementById("health").hidden=false; } if(usesBox&&uses.length) usesBox.replaceChildren(el("p",{class:"muted small",text:"Vikipedi'den daha fazlası:"}),...uses.map(secEl));
+  const facts=[["Familya",clampStr(d.family,60)],["Cins",clampStr(d.genus,60)],["Türkçe adları",(Array.isArray(d.names)?d.names:[]).map(n=>clampStr(n,40)).filter(Boolean).join(", ")],
+    ["Koruma durumu (IUCN)",clampStr(d.iucn,60)],["Türkiye'deki gözlem kaydı",Number.isFinite(d.trCount)?`${new Intl.NumberFormat("tr-TR").format(d.trCount)} kayıt (GBIF)`:""]].filter(([,v])=>v);
+  box.replaceChildren(...nodes(
+    pests.length?el("section",{class:"block"},el("h3",{text:"Hastalık ve zararlılar"}),...pests.map(secEl)):null,
+    facts.length?el("section",{class:"block"},el("h3",{text:"Botanik kimlik"}),
+      el("dl",{class:"facts"},...facts.flatMap(([k,v])=>[el("dt",{text:k}),el("dd",{text:v})])),
+      el("p",{class:"muted small"},"Kaynak: ",
+        okUrl(d.gbifUrl)?el("a",{href:d.gbifUrl,target:"_blank",rel:"noopener noreferrer"},"GBIF"):"GBIF",
+        okUrl(d.wikidataUrl)?[" · ",el("a",{href:d.wikidataUrl,target:"_blank",rel:"noopener noreferrer"},"Wikidata")]:null)):null));
 }
 function renderMeaning(){
   const m=document.getElementById("meaning"); if(!m||!current) return;
@@ -695,7 +767,8 @@ function setMode(m){
   document.querySelector("#stage .hint").hidden = m==="photo";
   if(stage){ stage.paused = m==="photo"; if(!stage.paused) stage.loop(); }
   else if(m==="3d") ensureStage().then(s=>{ if(s&&viewMode==="3d"){ s.paused=false; s.resize(); s.loop(); } });
-  [...gallery.querySelectorAll("button")].forEach(b=>b.setAttribute("aria-pressed",String(m==="3d"?b.dataset.k==="3d":b.dataset.k===String(curPhoto))));
+  stageHost.classList.toggle("is3d",m==="3d"); // 3B'de ad koyu renkle yazılır
+  document.querySelectorAll("#mosaic button[data-k]").forEach(b=>b.setAttribute("aria-pressed",String(m==="photo"&&b.dataset.k===String(curPhoto))));
 }
 let chose3d=false; // kullanıcı bu bitkide 3B'yi kendisi seçtiyse geç gelen fotoğraflar onu geri çevirmez
 document.querySelectorAll("#stage .modes .chip").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.mode==="photo"&&!curPhotos.length) return; chose3d=b.dataset.mode==="3d"; setMode(b.dataset.mode); }));
@@ -707,21 +780,32 @@ function preparePhoto(i){
   return true;
 }
 function showPhoto(i){ if(preparePhoto(i)){ chose3d=false; setMode("photo"); } }
+const mosaic=document.getElementById("mosaic"), heroBox=document.querySelector(".hero"), photosNote=document.getElementById("photosnote");
 async function loadMedia(f){
   const tok=++mediaToken; curPhotos=[];
-  gallery.replaceChildren(el("p",{class:"muted",text:"Fotoğraflar yükleniyor…"}));
+  heroBox.classList.add("loading"); mosaic.replaceChildren(...[0,1,2,3].map(()=>el("span",{class:"tile ph-skel"})));
+  gallery.replaceChildren(el("p",{class:"muted",text:"Fotoğraflar yükleniyor…"})); photosNote.textContent="";
   const m=await plantMedia(f); if(tok!==mediaToken) return;
+  heroBox.classList.remove("loading");
   curPhotos=m.photos;
   const w=document.getElementById("wiki");
-  if(w && m.wiki) w.replaceChildren(el("p",{text:m.wiki.text}), m.wiki.url?el("a",{href:m.wiki.url,target:"_blank",rel:"noopener noreferrer",class:"muted"},"Vikipedi’de devamını oku (CC BY-SA)"):null);
+  if(w && m.wiki && !f.enc) w.replaceChildren(el("p",{text:m.wiki.text}), m.wiki.url?el("a",{href:m.wiki.url,target:"_blank",rel:"noopener noreferrer",class:"muted"},"Vikipedi’de devamını oku (CC BY-SA)"):null);
+  heroBox.classList.toggle("single",curPhotos.length<2);
   if(!curPhotos.length){
-    gallery.replaceChildren(el("p",{class:"muted",text:"Bu bitki için açık lisanslı fotoğraf bulunamadı; 3B görünüm gösteriliyor."}));
+    mosaic.replaceChildren(); credit.textContent="";
+    gallery.replaceChildren(el("p",{class:"muted",text:"Bu bitki için açık lisanslı fotoğraf bulunamadı; yukarıda 3B görünüm gösteriliyor."}));
     setMode("3d"); return;
   }
-  const STRIP=8; // şeritte ilk 8; hepsi tam ekran galeride
-  gallery.replaceChildren(...curPhotos.slice(0,STRIP).map((p,i)=>el("button",{"data-k":String(i),"aria-label":`Fotoğraf ${i+1}: ${p.author}`,onclick:()=>showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}))),
-    el("button",{"data-k":"3d","aria-label":"3B görünüm",class:"t3d",onclick:()=>{ chose3d=true; setMode("3d"); }},"3B"),
-    el("button",{class:"t3d all","aria-label":`Bütün fotoğraflar (${curPhotos.length})`,onclick:()=>openLightbox(curPhoto)},`Tümü ${curPhotos.length}`));
+  // büyük fotoğrafın yanında 4'lü mozaik; sonuncusunda "+N fotoğraf"
+  const rest=curPhotos.length-5;
+  mosaic.replaceChildren(...curPhotos.slice(1,5).map((p,k)=>{ const i=k+1, last=k===3&&rest>0;
+    return el("button",{class:"tile","data-k":String(i),"aria-label":last?`Bütün fotoğraflar (${curPhotos.length})`:`Fotoğraf ${i+1}: ${p.author}`,
+      onclick:()=>last?openLightbox(i):showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}),last?el("span",{class:"more",text:`+${rest+1} fotoğraf`}):null); }));
+  // bütün fotoğraflar: duvar düzeni, her birinin altında sahibi ve lisansı
+  photosNote.textContent=`${curPhotos.length} açık lisanslı fotoğraf · iNaturalist ve Wikimedia Commons katılımcılarından`;
+  gallery.replaceChildren(...curPhotos.map((p,i)=>el("figure",{class:"mitem"},
+    el("button",{type:"button","aria-label":`Fotoğraf ${i+1}, büyüt`,onclick:()=>openLightbox(i)},el("img",{src:p.thumb,alt:`${f.name} fotoğrafı ${i+1}`,loading:"lazy"})),
+    el("figcaption",null,`${p.author} · ${p.license} · `,el("a",{href:p.page,target:"_blank",rel:"noopener noreferrer"},p.source)))));
   if(chose3d&&viewMode==="3d"){ preparePhoto(0); setMode("3d"); } else showPhoto(0);
 }
 
@@ -794,8 +878,28 @@ async function aiPlant(name){
     const f=validateAIPlant(r.plant);
     if(!f){ toastSheet(`“${name}” adında bir bitki bulunamadı. Yazımı kontrol edebilirsin.`); return; }
     showFlower(f,0,{scroll:true});
-  }catch(err){ toastSheet(err?.code==="rate_limited"?"Çok sık istendi; bir dakika bekleyin.":"Kart üretilemedi. Bir süre sonra tekrar deneyin."); }
+  }catch(err){
+    if(err?.code==="rate_limited"){ toastSheet("Çok sık istendi; bir dakika bekleyin."); return; }
+    // yapay zekâ kapalıysa: kaynaklardan ansiklopedi kartı (bakım bilgisi olmadan)
+    const enc=await encyclopediaCard(name);
+    if(enc) showFlower(enc,0,{scroll:true});
+    else toastSheet(`“${name}” için bilgi bulunamadı. Yazımı kontrol edebilir ya da Latince adıyla deneyebilirsin.`);
+  }
   finally{ aiBusy=false; aiLast=Date.now(); }
+}
+/* Vikipedi + Wikidata + GBIF'ten, yapay zekâ olmadan: ad, Latince ad, familya, özet; fotoğraf ve ek bilgi showFlower'da yüklenir */
+async function encyclopediaCard(name){
+  if(!/^[A-Za-zÇĞİÖŞÜçğıöşüâîû .'-]{2,40}$/.test(name)) return null;
+  const d=await fetch(`/api/lookup?name=${encodeURIComponent(name)}`).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(!d?.found) return null;
+  const latin=clampStr(d.latin,80); if(!/^[A-Z][a-z-]+( [a-z×-]+){0,3}$/.test(latin)) return null;
+  const blurb=clampStr(d.blurb,600);
+  return {id:"enc-"+norm(latin).replace(/ /g,"-"),enc:true,name:clampStr(d.name,40)||latin,latin,
+    kind:d.family?`Familya: ${clampStr(d.family,60)}`:"Bitki",
+    blurb:(blurb||"Bu bitki için kısa açıklama bulunamadı.")+(d.blurbLang==="en"?" (İngilizce Vikipedi'den)":""),
+    aliases:[],colors:[{n:"Doğal",hex:"#7E9A62",m:"bu bitki için çiçek dili kaydı yok"}],
+    care:{light:[2,"—"],water:[2,"—"],soil:"—",temp:"—",humidity:"—",feed:"—"},good:[],bad:[],toxic:"—",shape:{t:"daisy",center:"#E2C04A"},
+    sources:(Array.isArray(d.sources)?d.sources:[]).map(s=>clampStr(s,30)).slice(0,4)};
 }
 
 function validateAIPlant(v){ // yapay zekâ çıktısı güvenilmez veri sayılır

@@ -37,6 +37,8 @@ Site http://localhost:3000 adresinde açılır. Anahtarlar (isteğe bağlı) `.e
 | `api/ai.js` | AI Gateway: soru yanıtlama, yeni bitki kartı (IP başına dakikada 8) |
 | `api/care.js` | Vikipedi (TR/EN) + Wikidata + GBIF ham verisi → yapay zekâyla Türkçe kart → `plant_cache` (30 gün) |
 | `api/identify.js` | Görsel tanıyan modelle fotoğraftan tanıma, AI Gateway üzerinden (≤4 MB, jpeg/png/webp, imza kontrolü) |
+| `api/info.js` | Vikipedi (kullanım, zehirlilik, hastalık ve zararlılar bölümleri) + Wikidata + GBIF (familya, Türkiye gözlem sayısı) |
+| `api/lookup.js` | Rehberde olmayan bitki için yapay zekâsız ansiklopedi kartı |
 | `api/stock.js` | Openverse kategori görselleri (CC BY / BY-SA / CC0 / kamu malı, atıflı; tür tanımada kullanılmaz) |
 | `api/page.js` | `/bitki/:id` sayfası: paylaşım önizlemesi için bitkiye özel başlık, açıklama ve Open Graph etiketleri |
 | `api/_plants.js` | `app.js`'teki bitki verisinin sunucu kopyası — elle düzenleme, `node scripts/gen-plants.mjs` ile üret |
@@ -49,7 +51,7 @@ Site http://localhost:3000 adresinde açılır. Anahtarlar (isteğe bağlı) `.e
 
 ## Özellikler (kısaca)
 
-- **Rehber:** 16 bitki, trie arama, gerçek fotoğraflar + 3B (Three.js yalnızca gerektiğinde yüklenir), mevsim notları, her bitkiye adres (`/bitki/orkide?renk=pembe`) ve paylaşım önizlemesi.
+- **Rehber:** 16 bitki (her biri için sağlık ve kullanım notu, kanıt düzeyi ve uyarı), trie arama, gerçek fotoğraflar + 3B (Three.js yalnızca gerektiğinde yüklenir), mevsim notları, her bitkiye adres (`/bitki/orkide?renk=pembe`) ve paylaşım önizlemesi.
 - **Bitkilerim:** tarayıcıda saklanan liste, sulama günü, `.ics` takvim dosyası, site açıkken bildirim.
 - **Pazar:** arama, kategori/şehir/stok süzgeci, çiçekçi sayfaları (`/dukkan/:id`), ürün bildirme.
 - **Çiçekçi paneli:** dükkân, ürün ekle/düzenle/kaldır, görüntülenme ve WhatsApp sayıları, şifremi unuttum, dükkânı silme.

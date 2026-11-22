@@ -122,3 +122,22 @@ test("/api/page: bilinmeyen bitki 404", async () => {
   assert.equal((await GET(new Request("https://x/api/page?id=yokboyle"))).status, 404);
   assert.equal((await GET(new Request("https://x/api/page?id=__proto__"))).status, 404);
 });
+
+test("/api/info: girdi doğrulaması ve bölüm metni temizliği", async () => {
+  const { GET, sectionText } = await import("../api/info.js");
+  assert.equal((await GET(new Request("https://x/api/info?latin=<x>"))).status, 400);
+  assert.equal((await GET(new Request("https://x/api/info?latin=Rosa&tr=<b>"))).status, 400);
+  const html = '<div class="toc"><ul><li>1 Uses 1.1 Food and drink</li></ul></div><h2>Uses</h2><p>Gül suyu <b>cilt</b> için kullanılır<sup>[1]</sup> ve çok eskidir.</p><table><tr><td>tablo</td></tr></table><p>短 Rosa damascena yağı parfümcülükte önemlidir, uzun cümle.</p>';
+  const t = sectionText(html);
+  assert.ok(!t.includes("1 Uses"), t);
+  assert.ok(!t.includes("tablo") && !t.includes("[1]") && !t.includes("<"), t);
+  assert.ok(t.includes("Gül suyu cilt için kullanılır") && t.includes("Rosa damascena"), t);
+  assert.ok(!/[㐀-鿿]/.test(t), t);
+});
+
+test("/api/lookup: başka siteden 403, geçersiz ad 400", async () => {
+  const { GET } = await import("../api/lookup.js");
+  const mk = (q, site = "same-origin") => new Request("https://sera.test/api/lookup?" + q, { headers: { host: "sera.test", "sec-fetch-site": site, "x-forwarded-for": "7.7.7.7" } });
+  assert.equal((await GET(mk("name=Begonya", "cross-site"))).status, 403);
+  assert.equal((await GET(mk("name=<script>"))).status, 400);
+});

@@ -35,9 +35,9 @@
 <main>
 <!-- ================= REHBER ================= -->
 <section class="view" id="v-rehber" aria-labelledby="h-rehber">
-  <div class="guide">
-    <div class="left">
-      <h1 class="big" id="h-rehber">Hangi bitkiyle ilgileniyorsun?</h1>
+  <div class="g-top">
+    <h1 class="g-title" id="h-rehber">Hangi bitkiyle ilgileniyorsun?</h1>
+    <div class="g-tools">
       <div class="search" role="search">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#1D3A2A" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="#1D3A2A" stroke-width="2" stroke-linecap="round"/></svg>
         <label class="sr" for="q">Bitki ara</label>
@@ -47,26 +47,48 @@
       <div class="idrow">
         <button class="chip" id="idbtn" type="button">Fotoğraftan tanı</button>
         <input id="idfile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-        <span class="muted">Adını bilmediğin bitkinin fotoğrafını yükle.</span>
+        <span class="muted">Adını bilmiyor musun? Fotoğrafını yükle.</span>
       </div>
-      <div class="stage" id="stage">
-        <div class="modes" role="group" aria-label="Görünüm türü">
-          <button class="chip" data-mode="photo" aria-pressed="true">Fotoğraf</button>
-          <button class="chip" data-mode="3d" aria-pressed="false">3B</button>
-        </div>
-        <figure class="photo" id="photo"><img id="photoimg" alt=""><figcaption id="credit"></figcaption></figure>
-        <div class="views" role="group" aria-label="Kamera" hidden>
-          <button class="chip" data-view="front" aria-pressed="true">Önden</button>
-          <button class="chip" data-view="top" aria-pressed="false">Üstten</button>
-          <button class="chip" data-view="close" aria-pressed="false">Yakın</button>
-        </div>
-        <span class="hint">Sürükleyip çevir</span>
-      </div>
-      <div class="gallery" id="gallery" aria-label="Fotoğraflar"></div>
-      <div class="swatches" id="swatches" role="group" aria-label="Renkler"></div>
     </div>
-    <article class="sheet" id="sheet" aria-live="polite"></article>
   </div>
+
+  <!-- büyük fotoğraf (ya da 3B sahne) + yanında 4'lü fotoğraf mozaiği -->
+  <div class="hero">
+    <div class="stage" id="stage">
+      <div class="modes" role="group" aria-label="Görünüm türü">
+        <button class="chip" data-mode="photo" aria-pressed="true">Fotoğraf</button>
+        <button class="chip" data-mode="3d" aria-pressed="false">3B</button>
+      </div>
+      <figure class="photo" id="photo"><img id="photoimg" alt=""></figure>
+      <div class="hero-name" id="heroname"></div>
+      <div class="views" role="group" aria-label="Kamera" hidden>
+        <button class="chip" data-view="front" aria-pressed="true">Önden</button>
+        <button class="chip" data-view="top" aria-pressed="false">Üstten</button>
+        <button class="chip" data-view="close" aria-pressed="false">Yakın</button>
+      </div>
+      <span class="hint">Sürükleyip çevir</span>
+    </div>
+    <div class="mosaic" id="mosaic" role="group" aria-label="Öne çıkan fotoğraflar"></div>
+  </div>
+  <p class="credit" id="credit"></p>
+
+  <div class="guide">
+    <article class="sheet" id="sheet" aria-live="polite"></article>
+    <aside class="side" aria-label="Renkler ve anlamları">
+      <div class="side-in">
+        <h2 class="side-h">Renkler</h2>
+        <div class="swatches" id="swatches" role="group" aria-label="Renkler"></div>
+        <p class="meaning" id="meaning"></p>
+        <div class="related" id="related"></div>
+        <div id="sideextra"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="photos" aria-labelledby="h-photos">
+    <div class="photos-head"><h2 id="h-photos">Fotoğraflar</h2><p class="muted" id="photosnote"></p></div>
+    <div class="masonry" id="gallery"></div>
+  </section>
 </section>
 
 <!-- ================= RENKLER ================= -->
