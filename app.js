@@ -1189,16 +1189,54 @@ const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function cleanProduct(x){ // veritabanından gelen veri de güvenilmez sayılır
   if(!x||!UUID_RE.test(x.id||"")||!x.shop||!UUID_RE.test(x.shop.id||"")) return null;
   const name=clampStr(x.name,60), price=Number(x.price); if(!name||!isFinite(price)) return null;
-  const phone=clampStr(x.shop.phone,20);
   return {id:x.id,name,price,cat:CATS.includes(x.cat)?x.cat:"Diğer",species:BY_ID[x.species]?x.species:"",color:clampStr(x.color,20),
     stock:Math.max(0,Math.floor(+x.stock||0)),desc:clampStr(x.description,600),photos:(Array.isArray(x.photos)?x.photos:[]).filter(p=>PHOTO_RE.test(p)).slice(0,4),
-    created:Date.parse(x.created_at)||0,
-    shop:{id:x.shop.id,name:clampStr(x.shop.name,60)||"Çiçekçi",city:clampStr(x.shop.city,30),phone:/^[+0-9 ()-]{7,20}$/.test(phone)?phone:"",about:clampStr(x.shop.about,300)}};
+    created:Date.parse(x.created_at)||0, shop:cleanShop(x.shop)};
+}
+/* çiçekçi bilgisi: adres, çalışma saatleri (pazartesiden pazara 7 öğe, "09:00-19:00" ya da kapalı için "") ve konum */
+const SHOP_COLS="id,name,city,phone,about,address,hours,lat,lon";
+const HOUR_RE=/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
+const DAYS=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+function cleanShop(s){
+  const phone=clampStr(s.phone,20), lat=Number(s.lat), lon=Number(s.lon);
+  const hours=Array.isArray(s.hours)&&s.hours.length===7&&s.hours.every(h=>h===""||HOUR_RE.test(h))?[...s.hours]:[];
+  const geo=s.lat!=null&&s.lon!=null&&lat>=35&&lat<=43&&lon>=25&&lon<=45;
+  return {id:s.id,name:clampStr(s.name,60)||"Çiçekçi",city:clampStr(s.city,30),phone:/^[+0-9 ()-]{7,20}$/.test(phone)?phone:"",about:clampStr(s.about,300),
+    address:clampStr(s.address,200),hours,lat:geo?lat:null,lon:geo?lon:null};
+}
+/* İstanbul saatine göre şu an açık mı? (gece yarısını aşan saatler de: "18:00-02:00") */
+function openNow(hours,now=new Date()){
+  if(hours.length!==7) return null;
+  const parts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Istanbul",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(now).map(p=>[p.type,p.value]));
+  const d=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(parts.weekday), m=(+parts.hour)*60+(+parts.minute);
+  const span=h=>{ if(!h) return null; const [a,b]=h.split("-").map(t=>{ const [x,y]=t.split(":"); return +x*60+ +y; }); return [a,b]; };
+  const today=span(hours[d]), prev=span(hours[(d+6)%7]);
+  if(today&&(today[0]<today[1]?m>=today[0]&&m<today[1]:m>=today[0])) return {open:true,until:hours[d].slice(6)};
+  if(prev&&prev[0]>=prev[1]&&m<prev[1]) return {open:true,until:hours[(d+6)%7].slice(6)};
+  for(let k=0;k<7;k++){ const i=(d+k)%7, s=span(hours[i]); if(s&&(k>0||s[0]>m)) return {open:false,next:(k===0?"bugün ":k===1?"yarın ":DAYS[i]+" ")+hours[i].slice(0,5)}; }
+  return {open:false,next:""};
+}
+function shopDetails(s){ // saatler, adres, harita; dış metinler yalnızca textContent ile
+  const st=openNow(s.hours), bits=[];
+  if(st) bits.push(el("p",{class:"openbadge "+(st.open?"on":"off"),text:st.open?`Şu an açık · kapanış ${st.until}`:`Şu an kapalı${st.next?" · açılış "+st.next:""}`}));
+  if(s.hours.length===7){
+    const today=(new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Istanbul"})).getDay()+6)%7;
+    bits.push(el("details",{class:"hours"},el("summary",{text:"Çalışma saatleri"}),
+      el("dl",null,...DAYS.flatMap((d,i)=>[el("dt",{class:i===today?"today":"",text:d}),el("dd",{class:i===today?"today":"",text:s.hours[i]?s.hours[i].replace("-"," – "):"Kapalı"})]))));
+  }
+  if(s.address) bits.push(el("p",{class:"addr",text:s.address+(s.city&&!norm(s.address).includes(norm(s.city))?", "+s.city:"")}));
+  if(s.lat!=null){
+    const d=0.004, bbox=[s.lon-d,s.lat-d*0.75,s.lon+d,s.lat+d*0.75].map(v=>v.toFixed(5)).join(",");
+    bits.push(el("div",{class:"map"},el("iframe",{title:`${s.name} haritada`,loading:"lazy",referrerpolicy:"no-referrer",sandbox:"allow-scripts allow-same-origin",
+      src:`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${s.lat.toFixed(6)},${s.lon.toFixed(6)}`})),
+      el("p",{class:"muted small"},el("a",{href:`https://www.openstreetmap.org/directions?to=${s.lat.toFixed(6)},${s.lon.toFixed(6)}`,target:"_blank",rel:"noopener noreferrer"},"Yol tarifi al")," · Harita: © OpenStreetMap katkıcıları"));
+  }
+  return bits.length?el("div",{class:"shopinfo"},...bits):null;
 }
 const photoURL=p=>PHOTO_BASE+p.split("/").map(encodeURIComponent).join("/");
 async function loadMarket(){
   if(!sb){ marketState="error"; renderMarket(); return; }
-  const {data,error}=await sb.from("products").select("id,name,cat,species,color,price,stock,description,photos,created_at,shop:shops(id,name,city,phone,about)").order("created_at",{ascending:false}).limit(500);
+  const {data,error}=await sb.from("products").select("id,name,cat,species,color,price,stock,description,photos,created_at,shop:shops("+SHOP_COLS+")").order("created_at",{ascending:false}).limit(500);
   if(error){ marketState="error"; renderMarket(); return; }
   PRODUCTS=(data||[]).map(cleanProduct).filter(Boolean); marketState="ok";
   mTrie=new Trie();
@@ -1221,7 +1259,10 @@ function filteredProducts(){
   // tükenenler her zaman sona
   return [...list].sort((a,b)=>(a.stock>0?0:1)-(b.stock>0?0:1)||by(a,b));
 }
-const waLink=phone=>{ const d=String(phone||"").replace(/\D/g,""); return d.length>=10?`https://wa.me/${d}`:null; };
+// WhatsApp: hazır mesajla açılır (metin URL'de kodlanır; kişisel veri içermez)
+const waLink=(phone,msg="")=>{ const d=String(phone||"").replace(/\D/g,""); return d.length>=10?`https://wa.me/${d}${msg?"?text="+encodeURIComponent(msg):""}`:null; };
+const waProductMsg=p=>`Merhaba, Sera Defteri’nde gördüğüm “${p.name}” (${fmtTL(p.price)}) için yazıyorum. Hâlâ mevcut mu?\n${location.origin}/dukkan/${p.shop.id}`;
+const waShopMsg=s=>`Merhaba ${s.name}, sizi Sera Defteri’nde gördüm. Bir sorum olacaktı:`;
 /* çiçekçi sayfası başlığı */
 function renderShopHead(){
   const box=document.getElementById("shophead");
@@ -1230,12 +1271,13 @@ function renderShopHead(){
   const s=shopInfo||PRODUCTS.find(p=>p.shop.id===shopFilter)?.shop;
   if(!s){ box.replaceChildren(el("p",{class:"muted",text:"Çiçekçi yükleniyor…"})); return; }
   document.title=`${s.name}${s.city?", "+s.city:""} — ${SITE_TITLE}`;
-  const wa=waLink(s.phone);
+  const wa=waLink(s.phone,waShopMsg(s));
   box.replaceChildren(el("div",{class:"shophead"},
     el("a",{href:"/#pazar",class:"linkbtn small",onclick:e=>{ e.preventDefault(); history.pushState(null,"","/#pazar"); route(); }},"Tüm çiçekçiler"),
     el("h1",{class:"big flush",text:s.name}),
     el("p",{class:"muted",text:[s.city,s.phone].filter(Boolean).join(" · ")}),
     s.about?el("p",{class:"about",text:s.about}):null,
+    s.hours?shopDetails(s):null,
     el("div",{class:"row"},
       wa?el("a",{class:"btn",href:wa,target:"_blank",rel:"noopener noreferrer",onclick:()=>{ const p=PRODUCTS.find(x=>x.shop.id===s.id); if(p) bumpStat(p.id,"wa"); }},"WhatsApp’tan yaz"):null,
       el("button",{class:"btn ghost",type:"button",onclick:async e=>{
@@ -1308,7 +1350,7 @@ function openProduct(p){
     if(v.t==="svg"){ const s=flowerThumb(p.species,p.color); s.style.cssText="position:absolute;inset:0;display:grid;place-items:center"; big.append(s); }
   };
   views.forEach((v,i)=>thumbs.append(el("button",{"aria-pressed":"false","aria-label":v.t==="3d"?"3B görünüm":`Fotoğraf ${i+1}`,onclick:()=>show(i)},v.t==="img"?el("img",{src:photoURL(v.id),alt:""}):v.t==="3d"?"3B":flowerThumb(p.species,p.color))));
-  const wa=waLink(p.shop.phone);
+  const wa=waLink(p.shop.phone,waProductMsg(p));
   bumpStat(p.id,"view");
   pmodal.replaceChildren(
     el("button",{class:"close","aria-label":"Kapat",onclick:()=>pmodal.close()},"×"),
@@ -1326,6 +1368,7 @@ function openProduct(p){
           el("dt",{text:"Stok"}),el("dd",{text:p.stock>0?`${p.stock} adet`:"Tükendi"}),
           p.shop.phone?[el("dt",{text:"Telefon"}),el("dd",{text:p.shop.phone})]:null),
         p.shop.about?el("p",{class:"muted",text:p.shop.about}):null,
+        shopDetails(p.shop),
         el("div",{class:"row"},
           wa?el("a",{class:"btn",href:wa,target:"_blank",rel:"noopener noreferrer",style:"text-decoration:none",onclick:()=>bumpStat(p.id,"wa")},"WhatsApp’tan yaz"):null,
           shopFilter!==p.shop.id?el("button",{class:"btn ghost",type:"button",onclick:()=>{ pmodal.close(); openShop(p.shop.id); }},"Çiçekçinin diğer ürünleri"):null,
@@ -1397,12 +1440,12 @@ async function loadMine(){
   if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; reports=[]; return; }
   const [a,s,p]=await Promise.all([
     sb.from("admins").select("user_id").eq("user_id",uid()).maybeSingle(),
-    sb.from("shops").select("id,name,city,phone,about").eq("id",uid()).maybeSingle(),
+    sb.from("shops").select(SHOP_COLS).eq("id",uid()).maybeSingle(),
     sb.from("products").select("id,name,cat,species,color,price,stock,description,photos,created_at").eq("shop_id",uid()).order("created_at",{ascending:false})
   ]);
   isAdmin=!!a.data;
-  myShop=s.data||null;
-  myProducts=(p.data||[]).map(x=>cleanProduct({...x,shop:{id:uid(),name:myShop?.name||"",city:"",phone:"",about:""}})).filter(Boolean);
+  myShop=s.data?{...cleanShop(s.data),name:clampStr(s.data.name,60)}:null;
+  myProducts=(p.data||[]).map(x=>cleanProduct({...x,shop:{id:uid(),name:myShop?.name||""}})).filter(Boolean);
   // istatistik: ürün başına görüntülenme ve WhatsApp tıklaması (görünüm RLS'e uyar: yalnızca kendi ürünlerin)
   myStats={};
   if(myProducts.length){
@@ -1559,15 +1602,45 @@ function renderPanel(){
   if(!sb){ box.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Panel şu an açılamıyor"}),el("p",{text:"Bağlantını kontrol edip sayfayı yenile."}))); return; }
   if(!uid()){ if(authMode==="newpass") authMode="login"; authForm(box); return; }
   if(authMode==="newpass"){ newPassForm(box); return; }
-  const s=myShop||{name:"",city:"",phone:"",about:""};
+  const s=myShop||{name:"",city:"",phone:"",about:"",address:"",hours:[],lat:null,lon:null};
   const fName=el("input",{id:"s-name",required:true,maxlength:"60",value:s.name}), fCity=el("input",{id:"s-city",maxlength:"30",value:s.city,placeholder:"Örn. İzmir"}),
-        fPhone=el("input",{id:"s-phone",maxlength:"20",value:s.phone,placeholder:"+90 5xx xxx xx xx",inputmode:"tel"}), fAbout=el("textarea",{id:"s-about",maxlength:"300"},s.about);
+        fPhone=el("input",{id:"s-phone",maxlength:"20",value:s.phone,placeholder:"+90 5xx xxx xx xx",inputmode:"tel"}), fAbout=el("textarea",{id:"s-about",maxlength:"300"},s.about),
+        fAddr=el("input",{id:"s-addr",maxlength:"200",value:s.address,placeholder:"Mahalle, cadde, no",autocomplete:"street-address"});
+  // çalışma saatleri: her gün için açık kutusu + açılış/kapanış
+  const useHours=el("input",{type:"checkbox",id:"s-usehours",checked:s.hours.length===7});
+  const dayRows=DAYS.map((d,i)=>{
+    const h=s.hours[i]||"", on=el("input",{type:"checkbox",checked:s.hours.length!==7||!!h,"aria-label":`${d} açık`});
+    const from=el("input",{type:"time",value:h?h.slice(0,5):"09:00","aria-label":`${d} açılış`}), to=el("input",{type:"time",value:h?h.slice(6):"19:00","aria-label":`${d} kapanış`});
+    const sync=()=>{ from.disabled=to.disabled=!on.checked; }; on.addEventListener("change",sync); sync();
+    return {row:el("div",{class:"dayrow"},el("label",{class:"check"},on," ",d),from,el("span",{text:"–"}),to),get:()=>on.checked&&HOUR_RE.test(`${from.value}-${to.value}`)?`${from.value}-${to.value}`:""};
+  });
+  const hoursBox=el("div",{class:"hoursedit"},...dayRows.map(r=>r.row));
+  const syncHours=()=>{ hoursBox.hidden=!useHours.checked; }; useHours.addEventListener("change",syncHours); syncHours();
+  // konum: adres yazılınca sunucudaki /api/geocode (OpenStreetMap) ile bulunur; kayıtlı konum yalnızca onaylanınca değişir
+  let geo=s.lat!=null?{lat:s.lat,lon:s.lon}:null;
+  const geoNote=el("p",{class:"muted small","aria-live":"polite",text:geo?"Konum kayıtlı; dükkân sayfasında harita gösterilir.":"Konum yok: harita gösterilmez."});
+  const geoBtns=el("div",{class:"row"},
+    el("button",{type:"button",class:"btn ghost small",onclick:async e=>{
+      const q=[fAddr.value,fCity.value].map(v=>v.trim()).filter(Boolean).join(", ");
+      if(q.length<5){ geoNote.textContent="Önce adresi ve şehri yaz."; return; }
+      e.target.disabled=true; geoNote.textContent="Konum aranıyor…";
+      try{
+        const r=await fetch(`/api/geocode?q=${encodeURIComponent(q.slice(0,200))}`); const d=r.ok?await r.json():null;
+        if(d?.found&&Number.isFinite(d.lat)&&Number.isFinite(d.lon)){ geo={lat:d.lat,lon:d.lon}; geoNote.textContent=`Bulundu: ${clampStr(d.label,200)}. Kaydettiğinde haritada bu nokta gösterilir.`; }
+        else geoNote.textContent=r.status===429?"Çok sık denendi; biraz sonra tekrar dene.":"Bu adres bulunamadı. Mahalle ve cadde adını kontrol et.";
+      }catch(_){ geoNote.textContent="Konum aranamadı, bağlantını kontrol et."; }
+      e.target.disabled=false;
+    }},"Adresten konumu bul"),
+    el("button",{type:"button",class:"linkbtn",onclick:()=>{ geo=null; geoNote.textContent="Konum kaldırılacak: kaydettiğinde harita gösterilmez."; }},"Konumu kaldır"));
   const sErr=el("p",{class:"err","aria-live":"polite"});
   const shopForm=el("form",{class:"card",onsubmit:async e=>{
     e.preventDefault(); if(busy) return;
-    const row={id:uid(),name:clampStr(fName.value,60),city:clampStr(fCity.value,30),phone:clampStr(fPhone.value,20),about:clampStr(fAbout.value,300)};
+    const hours=useHours.checked?dayRows.map(r=>r.get()):[];
+    const row={id:uid(),name:clampStr(fName.value,60),city:clampStr(fCity.value,30),phone:clampStr(fPhone.value,20),about:clampStr(fAbout.value,300),
+      address:clampStr(fAddr.value,200),hours:hours.every(h=>!h)?[]:hours,lat:geo?.lat??null,lon:geo?.lon??null};
     if(row.name.length<2){ sErr.textContent="Dükkân adı en az 2 karakter olmalı."; return; }
     if(row.phone && !/^[+0-9 ()-]{7,20}$/.test(row.phone)){ sErr.textContent="Telefon yalnızca rakam, boşluk, +, ( ) ve - içerebilir."; return; }
+    if(useHours.checked&&dayRows.some((r,i)=>!r.get()&&r.row.querySelector("input[type=checkbox]").checked)){ sErr.textContent="Açık günler için açılış ve kapanış saatini gir."; return; }
     busy=true; const {error}=await sb.from("shops").upsert(row); busy=false;
     if(error){ sErr.textContent="Kaydedilemedi, tekrar dene."; return; }
     setFlash(myShop?"Dükkân bilgileri kaydedildi.":"Dükkânın açıldı. Şimdi ürün ekleyebilirsin."); await loadMine(); renderPanel(); loadMarket();
@@ -1576,6 +1649,8 @@ function renderPanel(){
     el("div",{class:"field"},el("label",{for:"s-name",text:"Dükkân adı"}),fName),
     el("div",{class:"two"},el("div",{class:"field"},el("label",{for:"s-city",text:"Şehir"}),fCity),el("div",{class:"field"},el("label",{for:"s-phone",text:"Telefon"}),fPhone)),
     el("div",{class:"field"},el("label",{for:"s-about",text:"Kısa tanıtım"}),fAbout),
+    el("div",{class:"field"},el("label",{for:"s-addr",text:"Adres"}),fAddr,geoBtns,geoNote),
+    el("div",{class:"field"},el("label",{class:"check"},useHours," Çalışma saatlerini göster"),hoursBox),
     el("button",{class:"btn",type:"submit",text:myShop?"Bilgileri kaydet":"Dükkânı aç"}),sErr,
     el("p",{class:"muted",style:"margin-top:18px"},session.user.email||"", " · ",el("button",{type:"button",class:"linkbtn",onclick:async()=>{ await sb.auth.signOut(); }},"Çıkış yap")),
     myShop?el("div",{class:"danger-zone"},
@@ -2021,9 +2096,9 @@ const SHOP_RE=/^\/dukkan\/([0-9a-f-]{36})\/?$/;
 const COLL_RE=/^\/koleksiyon\/([a-z-]{2,30})\/?$/;
 async function loadShopInfo(id){
   if(PRODUCTS.some(p=>p.shop.id===id)||!sb) return;
-  const {data}=await sb.from("shops").select("id,name,city,phone,about").eq("id",id).maybeSingle();
+  const {data}=await sb.from("shops").select(SHOP_COLS).eq("id",id).maybeSingle();
   if(shopFilter!==id) return;
-  shopInfo=data&&UUID_RE.test(data.id||"")?{id:data.id,name:clampStr(data.name,60)||"Çiçekçi",city:clampStr(data.city,30),phone:/^[+0-9 ()-]{7,20}$/.test(data.phone||"")?data.phone:"",about:clampStr(data.about,300)}:{id,name:"Bu çiçekçi bulunamadı",city:"",phone:"",about:""};
+  shopInfo=data&&UUID_RE.test(data.id||"")?cleanShop(data):{id,name:"Bu çiçekçi bulunamadı",city:"",phone:"",about:"",address:"",hours:[],lat:null,lon:null};
   renderMarket();
 }
 function route(){

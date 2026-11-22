@@ -282,6 +282,27 @@ footer nav a{color:var(--ink)}
 .shophead{margin:4px 0 8px}
 .shophead .about{max-width:62ch}
 .modal-info dd a{color:var(--ink)}
+/* çalışma saatleri, adres, harita */
+.shopinfo{display:grid;gap:8px;margin:12px 0;max-width:560px}
+.shopinfo p{margin:0}
+.openbadge{justify-self:start;font-size:.85rem;font-weight:650;padding:4px 12px;border-radius:999px}
+.openbadge.on{background:#CFE6CF;color:#1D3A2A}
+.openbadge.off{background:#F3DCE2;color:#6B2238}
+.shopinfo .hours summary{cursor:pointer;font-weight:600;font-size:.92rem}
+.shopinfo .hours dl{display:grid;grid-template-columns:auto 1fr;gap:3px 18px;margin:8px 0 0;font-size:.9rem}
+.shopinfo .hours dd{margin:0}
+.shopinfo .today{font-weight:700}
+.shopinfo .addr{font-size:.92rem}
+.shopinfo .map{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);aspect-ratio:16/9;background:var(--glass)}
+.shopinfo .map iframe{width:100%;height:100%;border:0;display:block}
+.hoursedit{display:grid;gap:6px;margin-top:8px}
+.hoursedit[hidden]{display:none}
+.dayrow{display:grid;grid-template-columns:minmax(110px,1fr) auto auto auto;gap:8px;align-items:center}
+.dayrow input[type=time]{padding:6px 8px;min-width:0}
+.dayrow input:disabled{opacity:.45}
+label.check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+label.check input{width:16px;height:16px;flex:none;margin:0;accent-color:var(--ink)}
+@media (max-width:420px){.dayrow{grid-template-columns:1fr auto auto auto;font-size:.88rem}}
 .mine .stats{font-size:.82rem;color:var(--ink-2);margin-top:2px}
 
 /* ---------- bitkilerim ---------- */

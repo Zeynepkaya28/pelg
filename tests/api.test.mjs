@@ -141,3 +141,21 @@ test("/api/lookup: başka siteden 403, geçersiz ad 400", async () => {
   assert.equal((await GET(mk("name=Begonya", "cross-site"))).status, 403);
   assert.equal((await GET(mk("name=<script>"))).status, 400);
 });
+
+test("/api/geocode: başka siteden 403, geçersiz adres 400 (ağa çıkmadan)", async () => {
+  const { GET: geocode } = await import("../api/geocode.js");
+  const g = (q, site = "same-origin") => geocode(new Request("https://sera.test/api/geocode?q=" + encodeURIComponent(q), { headers: { host: "sera.test", "sec-fetch-site": site, "x-forwarded-for": "4.4.4.4" } }));
+  assert.equal((await g("Alsancak İzmir", "cross-site")).status, 403);
+  for (const bad of ["ab", "<script>alert(1)</script>", "x".repeat(201), "Alsancak; DROP TABLE"]) assert.equal((await g(bad)).status, 400, bad);
+});
+
+test("migration 008: saat düzeni veritabanı kısıtıyla aynı", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const sql = await readFile(new URL("../supabase/migrations/008_shop_hours_location.sql", import.meta.url), "utf8");
+  const re = new RegExp(sql.match(/~\s*'([^']+)'/)[1]);
+  assert.ok(re.test(["09:00-19:00", "", "09:00-19:00", "09:00-19:00", "09:00-19:00", "10:00-16:00", ""].join(",")));
+  assert.ok(re.test(["18:00-02:00", "", "", "", "", "", ""].join(",")));
+  assert.ok(!re.test(["9:00-19:00", "", "", "", "", "", ""].join(",")));
+  assert.ok(!re.test(["24:00-19:00", "", "", "", "", "", ""].join(",")));
+  assert.ok(!re.test(["", "", "", "", "", ""].join(",")));
+});
