@@ -452,7 +452,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Monstera deliciosa",
-   "Deve tabanı"
+   "Monstera"
   ]
  },
  "pothos": {
@@ -475,7 +475,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Epipremnum aureum",
-   "Epipremnum aureum"
+   "Epipremnum"
   ]
  },
  "pasakilici": {
@@ -494,7 +494,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Dracaena trifasciata",
-   "Paşa kılıcı"
+   "Sansevieria"
   ]
  },
  "zz": {
@@ -647,7 +647,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Pelargonium",
-   "Sardunya"
+   "Itır"
   ]
  },
  "begonya": {
@@ -758,7 +758,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Yucca elephantipes",
-   "Yukka"
+   "Yucca"
   ]
  },
  "difenbahya": {
@@ -827,7 +827,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Kalanchoe blossfeldiana",
-   "Kalanchoe blossfeldiana"
+   "Kalanşo"
   ]
  },
  "siklamen": {
@@ -854,7 +854,7 @@ export const PLANTS = {
   ],
   "lookup": [
    "Cyclamen persicum",
-   "Sıklamen"
+   "Siklamen"
   ]
  },
  "feslegen": {

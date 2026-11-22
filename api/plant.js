@@ -45,12 +45,17 @@ export function commonsLicenseOk(raw) {
   return lic === "cc0" || lic.startsWith("public domain") || lic === "pd" || /^cc[ -]by(-sa)?[ -]\d(\.\d)?$/.test(lic);
 }
 
+// yaprağıyla tanınan bitkilerde "flower" araması nadir çiçeklerini getirir; bunlarda "plant" aranır
+const FOLIAGE = new Set(["Monstera deliciosa", "Epipremnum aureum", "Dracaena trifasciata", "Zamioculcas zamiifolia", "Aloe vera",
+  "Cactaceae", "Echeveria", "Ficus elastica", "Ficus benjamina", "Crassula ovata", "Yucca elephantipes", "Dieffenbachia",
+  "Ocimum basilicum", "Mentha spicata", "Salvia rosmarinus"]);
+
 async function commons(latin, need) {
   if (need <= 0) return [];
   const u = new URL("https://commons.wikimedia.org/w/api.php");
   Object.entries({
     action: "query", format: "json", generator: "search",
-    gsrsearch: `${latin} flower filetype:bitmap`, gsrnamespace: "6", gsrlimit: "40",
+    gsrsearch: `${latin} ${FOLIAGE.has(latin) ? "plant" : "flower"} filetype:bitmap`, gsrnamespace: "6", gsrlimit: "40",
     prop: "imageinfo", iiprop: "url|extmetadata", iiurlwidth: "1200",
     iiextmetadatafilter: "LicenseShortName|Artist|LicenseUrl",
   }).forEach(([k, v]) => u.searchParams.set(k, v));
@@ -191,6 +196,172 @@ export const HERO = {
     "https://commons.wikimedia.org/wiki/File:Olea_europaea_2356_flowers.jpg",
     "https://commons.wikimedia.org/wiki/File:Olea_europaea_Olive_%E1%83%96%E1%83%94%E1%83%97%E1%83%98%E1%83%A1%E1%83%AE%E1%83%98%E1%83%9A%E1%83%98.jpg",
     "https://commons.wikimedia.org/wiki/File:Olea_europaea_003.JPG",
+  ],
+  "Monstera deliciosa": [
+    "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa_Monstera_dziurawa_2024-01-20_Malaga_03.jpg",
+    "https://commons.wikimedia.org/wiki/File:Fruit_Salad_Plant_(Monstera_deliciosa).jpg",
+    "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa_Swiss_Cheese_Plant_%E1%83%9B%E1%83%9D%E1%83%9C%E1%83%A1%E1%83%A2%E1%83%94%E1%83%A0%E1%83%90.JPG",
+    "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa_Monstera_dziurawa_2023-10-31_02.jpg",
+    "https://commons.wikimedia.org/wiki/File:Fruit_Salad_Plant_(Monstera_deliciosa_%27Albo-Variegata%27).jpg",
+  ],
+  "Epipremnum aureum": [
+    "https://commons.wikimedia.org/wiki/File:Epipremnum_aureum_31082012.jpg",
+    "https://commons.wikimedia.org/wiki/File:Money_plant(Epipremnum_Aureum).jpg",
+    "https://commons.wikimedia.org/wiki/File:Epipremnum_aureum_(Marble_Queen)_houseplant.png",
+    "https://commons.wikimedia.org/wiki/File:Money_plant_(Epipremnum_aureum)_1.jpg",
+    "https://commons.wikimedia.org/wiki/File:Money_Plant_(Epipremnum_aureum_%27N%27_Joy%27)_2.jpg",
+  ],
+  "Dracaena trifasciata": [
+    "https://commons.wikimedia.org/wiki/File:Dracaena_trifasciata_21744978.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dracaena_trifasciata_60105757.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dracaena_trifasciata_177940020.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dracaena_trifasciata_120738827.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dracaena_trifasciata_58878359.jpg",
+  ],
+  "Zamioculcas zamiifolia": [
+    "https://commons.wikimedia.org/wiki/File:ZZ_Plant_(Zamioculcas_zamiifolia).jpg",
+    "https://commons.wikimedia.org/wiki/File:Zamioculcas_zamiifolia_1.jpg",
+    "https://commons.wikimedia.org/wiki/File:Zamioculcas_zamiifolia_8zz.jpg",
+    "https://commons.wikimedia.org/wiki/File:Zamioculcas_zamiifolia_10zz.jpg",
+    "https://commons.wikimedia.org/wiki/File:ZZ_Plant_(Zamioculcas_zamiifolia)_1.jpg",
+  ],
+  "Aloe vera": [
+    "https://commons.wikimedia.org/wiki/File:Aloe_Vera_Plant_3.jpg",
+    "https://commons.wikimedia.org/wiki/File:Aloe_Vera_Plant_4.jpg",
+    "https://commons.wikimedia.org/wiki/File:Aloe_vera_(Asphodelaceae).jpg",
+    "https://commons.wikimedia.org/wiki/File:A_potted_aloe_vera_plant.jpg",
+    "https://commons.wikimedia.org/wiki/File:Aloe_vera_(51653).jpg",
+  ],
+  "Cactaceae": [
+    "https://commons.wikimedia.org/wiki/File:Pachycereus_pringlei_forest.jpg",
+    "https://www.inaturalist.org/photos/33108041",
+    "https://commons.wikimedia.org/wiki/File:Ferocactus_wislizeni_(Fishhook_Barrel_Cactus)_fruit.jpg",
+    "https://commons.wikimedia.org/wiki/File:Cactaceae_in_Suan_Luang_Rama_9_Photographed_by_Trisorn_Triboon_(46).jpg",
+    "https://commons.wikimedia.org/wiki/File:Cactaceae_-_Oasis_Park_botanical_garden_-_Fuerteventura_-_04.jpg",
+  ],
+  "Echeveria": [
+    "https://commons.wikimedia.org/wiki/File:(MHNT)_Echeveria_secunda.jpg",
+    "https://commons.wikimedia.org/wiki/File:Echeveria_secunda_8840.jpg",
+    "https://commons.wikimedia.org/wiki/File:Echeveria_harmsii_in_Botanischer_Garten_Muenster.jpg",
+    "https://commons.wikimedia.org/wiki/File:Echeveria_pulvinata,_Jard%C3%ADn_Bot%C3%A1nico,_M%C3%BAnich,_Alemania,_2013-09-08,_DD_01.JPG",
+    "https://commons.wikimedia.org/wiki/File:Echeveria_%E2%80%98Rainbow%E2%80%99_(variegata).jpg",
+  ],
+  "Spathiphyllum": [
+    "https://commons.wikimedia.org/wiki/File:Peace_lily_-_1_-_cropped.jpg",
+    "https://www.inaturalist.org/photos/439386",
+    "https://commons.wikimedia.org/wiki/File:Spathiphyllum-Flower.jpg",
+    "https://commons.wikimedia.org/wiki/File:Spathiphyllum_cannaefolium-yercaud-salem-India.JPG",
+    "https://commons.wikimedia.org/wiki/File:Spathiphyllum_cannifolium_kz2.jpg",
+  ],
+  "Euphorbia pulcherrima": [
+    "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_cultivar-B_5Dsr_4013.jpg",
+    "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_cultivar-B_5Dsr_4014.jpg",
+    "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_cultivar-B_5Dsr_4022.jpg",
+    "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_%27Alaska%27,_Longwood_Gardens_2024_02.jpg",
+    "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_%27Ice_Punch%27,_Longwood_Gardens_2024_01.jpg",
+  ],
+  "Pelargonium": [
+    "https://commons.wikimedia.org/wiki/File:Pelargonium_2025_G1.jpg",
+    "https://commons.wikimedia.org/wiki/File:Pelargonium_inquinans_flower_in_Bhopal.jpg",
+    "https://commons.wikimedia.org/wiki/File:Pelargonium-Sitia-Crete-2.jpg",
+    "https://commons.wikimedia.org/wiki/File:Pelargonium-Sitia-Crete-5.jpg",
+    "https://commons.wikimedia.org/wiki/File:Pelargonium_flower_macro.jpg",
+  ],
+  "Begonia": [
+    "https://commons.wikimedia.org/wiki/File:Begonia_pink,.jpg",
+    "https://commons.wikimedia.org/wiki/File:Begonia_%27Saturn%27,_Tatton_Park.jpg",
+    "https://commons.wikimedia.org/wiki/File:White_Begonia_Bloom.jpg",
+    "https://commons.wikimedia.org/wiki/File:Begonia_semperflorens_male_flower.jpg",
+    "https://commons.wikimedia.org/wiki/File:Begonia_U485_female_flower.jpg",
+  ],
+  "Ficus elastica": [
+    "https://commons.wikimedia.org/wiki/File:Ficus_elastica_81315295.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ficus_November_2008-1.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ficus_elastica_59867379.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ficus_elastica_60622992.jpg",
+    "https://commons.wikimedia.org/wiki/File:Backlit_ficus_elastica_leaf_texture_2014_02.jpg",
+  ],
+  "Ficus benjamina": [
+    "https://commons.wikimedia.org/wiki/File:Ficus_benjamina-weeping_fig-benjamin_fig_01.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ficus_benjamina_Household_Plant.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ficus_benjamina_at_University_of_Kyrenia.jpg",
+    "https://www.inaturalist.org/photos/31479359",
+    "https://commons.wikimedia.org/wiki/File:Ficus_benjamina-weeping_fig-benjamin_fig_03.jpg",
+  ],
+  "Crassula ovata": [
+    "https://commons.wikimedia.org/wiki/File:(MHNT)_Crassula_ovata_-_Serres_du_Museum_de_Toulouse.jpg",
+    "https://commons.wikimedia.org/wiki/File:Jade_Plant_(Crassula_ovata).jpg",
+    "https://commons.wikimedia.org/wiki/File:Crassulaceae_Crassula_ovata_2.1.jpg",
+    "https://commons.wikimedia.org/wiki/File:Crassula_ovata_fleurs_FR_2013.jpg",
+    "https://commons.wikimedia.org/wiki/File:A_40_year_old_jade_plant_(Crassula_ovata).jpg",
+  ],
+  "Yucca elephantipes": [
+    "https://commons.wikimedia.org/wiki/File:Yucca_elephantipes_%27Silver_Star%27_Plant_2000px.jpg",
+    "https://commons.wikimedia.org/wiki/File:Yucca_elephantipes-Stammsteckling.jpg",
+    "https://commons.wikimedia.org/wiki/File:Yucca_gigantea_(Yucca_elephantipes)_-_Fruit_and_Spice_Park_-_Homestead,_Florida_-_DSC08919.jpg",
+    "https://www.inaturalist.org/photos/62056284",
+    "https://commons.wikimedia.org/wiki/File:Yucca_gigantea_-_Jard%C3%ADn_Bot%C3%A1nico_Canario_Viera_y_Clavijo_-_Gran_Canaria.jpg",
+  ],
+  "Dieffenbachia": [
+    "https://commons.wikimedia.org/wiki/File:Dieffenbachia_amoena_plant,_April_2023.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dumb_Cane_(Dieffenbachia)_plant.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dieffenbachia_seguine_kz03.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dieffenbachia_Tropic_Marianne_02.jpg",
+    "https://commons.wikimedia.org/wiki/File:Dieffenbachia_plant.jpg",
+  ],
+  "Anthurium andraeanum": [
+    "https://commons.wikimedia.org/wiki/File:Anthurium_andraeanum_flower.jpg",
+    "https://commons.wikimedia.org/wiki/File:Anthurium_andraeanum_Flamingo_flower_Barbados_0987.jpg",
+    "https://commons.wikimedia.org/wiki/File:Anthurium_(Flamingoplant)_12-08-2019_(actm)_03.jpg",
+    "https://commons.wikimedia.org/wiki/File:Anthurium_Andraenum_Flower.jpg",
+    "https://commons.wikimedia.org/wiki/File:Anthurium_andraeanum_%27Antherzek%27,_Longwood_Gardens_2024_03.jpg",
+  ],
+  "Kalanchoe blossfeldiana": [
+    "https://commons.wikimedia.org/wiki/File:Kalanchoe_blossfeldiana_Plant-_082558.jpg",
+    "https://commons.wikimedia.org/wiki/File:Kalanchoe_blossfeldiana_Plant-_082548.jpg",
+    "https://commons.wikimedia.org/wiki/File:%E0%B8%81%E0%B8%B8%E0%B8%AB%E0%B8%A5%E0%B8%B2%E0%B8%9A%E0%B8%AB%E0%B8%B4%E0%B8%99_Kalanchoe_blossfeldiana_Poelln._and_hybrids_(3).jpg",
+    "https://commons.wikimedia.org/wiki/File:2025_Kalanchoe_blossfeldiana_Poelin._Santiago_de_Compostela._Galiza.jpg",
+    "https://commons.wikimedia.org/wiki/File:%E0%B8%81%E0%B8%B8%E0%B8%AB%E0%B8%A5%E0%B8%B2%E0%B8%9A%E0%B8%AB%E0%B8%B4%E0%B8%99_Kalanchoe_blossfeldiana_Poelln._and_hybrids_(4).jpg",
+  ],
+  "Cyclamen persicum": [
+    "https://commons.wikimedia.org/wiki/File:CyclamenPersicumMill20.jpg",
+    "https://commons.wikimedia.org/wiki/File:Cyclamen_persicum_(Myrsinaceae)_flower_2.jpg",
+    "https://commons.wikimedia.org/wiki/File:Cyclamen_persicum_kz3.jpg",
+    "https://commons.wikimedia.org/wiki/File:Cyclamen_persicum_Mill._(Myrsinaceae)_flower.jpg",
+    "https://commons.wikimedia.org/wiki/File:Cyclamen_persicum_kz08.jpg",
+  ],
+  "Ocimum basilicum": [
+    "https://commons.wikimedia.org/wiki/File:Ocimum_basilicum_15-p.bot-ocim.basil-01.jpg",
+    "https://commons.wikimedia.org/wiki/File:Ocimum_basilicum_CG_NBG_LR.jpg",
+    "https://commons.wikimedia.org/wiki/File:-2019-07-20_Purple_basil,_(Ocimum_basilicum),_Trimingham.JPG",
+    "https://commons.wikimedia.org/wiki/File:-2020-06-25_Basil_plant_(Ocimum_basilicum),_Trimingham.JPG",
+  ],
+  "Mentha spicata": [
+    "https://commons.wikimedia.org/wiki/File:Mentha_spicata_var._crispa_002.JPG",
+    "https://commons.wikimedia.org/wiki/File:Starr_080607-7255_Mentha_x_spicata.jpg",
+    "https://commons.wikimedia.org/wiki/File:-2019-10-31_Garden_Mint_(Mentha_spicata),_Trimingham.JPG",
+    "https://www.inaturalist.org/photos/85965702",
+    "https://www.inaturalist.org/photos/22667704",
+  ],
+  "Salvia rosmarinus": [
+    "https://commons.wikimedia.org/wiki/File:Rosmarinus_officinalis_(1).jpg",
+    "https://commons.wikimedia.org/wiki/File:Rosmarinus_officinalis133095382.jpg",
+    "https://commons.wikimedia.org/wiki/File:Rosmarinus_officinalis_als_Tischdekoration_Juni_2012.JPG",
+    "https://commons.wikimedia.org/wiki/File:Salvia_rosmarinus_5Dsr_0089.jpg",
+  ],
+  "Jasminum officinale": [
+    "https://commons.wikimedia.org/wiki/File:Jasminum_officinale.JPG",
+    "https://commons.wikimedia.org/wiki/File:Jasminum_officionale_flowers,_74_Sunbury_St_Geebung_IMGP2384.jpg",
+    "https://commons.wikimedia.org/wiki/File:Jasminum_officionale_flowers,_74_Sunbury_St_Geebung_IMGP2383.jpg",
+    "https://www.inaturalist.org/photos/496730426",
+    "https://commons.wikimedia.org/wiki/File:Jasmine_flower_(20210).jpg",
+  ],
+  "Bougainvillea": [
+    "https://commons.wikimedia.org/wiki/File:Bougainvillea_flower_image.jpg",
+    "https://commons.wikimedia.org/wiki/File:Bougainvillea_flower_(94868).jpg",
+    "https://commons.wikimedia.org/wiki/File:Bougainvillea_flower_(11215).jpg",
+    "https://commons.wikimedia.org/wiki/File:Bougainvillea_flower_at_Pulikurumba.jpg",
+    "https://commons.wikimedia.org/wiki/File:Bougainvillea_Flower_(15).jpg",
   ],
 };
 

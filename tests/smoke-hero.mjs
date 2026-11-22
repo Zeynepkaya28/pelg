@@ -1,22 +1,17 @@
-// node tests/smoke-hero.mjs — 16 bitkinin hepsinde ilk 5 fotoğraf elle seçilenler mi (ağ gerekir)
+// node tests/smoke-hero.mjs — rehberdeki bütün bitkilerde ilk fotoğraflar elle seçilenler mi (ağ gerekir)
 import { GET, HERO } from "../api/plant.js";
+import { PLANTS } from "../api/_plants.js";
 
-const TR = {
-  "Lilium": "Zambak", "Rosa": "Gül", "Tulipa": "Lale", "Phalaenopsis": "Orkide", "Leucanthemum vulgare": "Papatya",
-  "Helianthus annuus": "Ayçiçeği", "Lavandula angustifolia": "Lavanta", "Dianthus caryophyllus": "Karanfil (çiçek)",
-  "Hyacinthus orientalis": "Sümbül", "Narcissus": "Nergis", "Chrysanthemum morifolium": "Kasımpatı",
-  "Hydrangea macrophylla": "Ortanca", "Streptocarpus ionanthus": "Afrika menekşesi", "Gerbera jamesonii": "Gerbera",
-  "Paeonia lactiflora": "Şakayık", "Olea europaea": "Zeytin",
-};
-
-let ok = 0;
+const byLatin = Object.fromEntries(Object.values(PLANTS).map((p) => [p.lookup[0], p.lookup[1]]));
+let ok = 0, total = 0;
 for (const latin of Object.keys(HERO)) {
-  const res = await GET(new Request(`https://x/api/plant?latin=${encodeURIComponent(latin)}&tr=${encodeURIComponent(TR[latin])}`));
-  const d = await res.json();
+  total++;
+  const tr = byLatin[latin] || "";
+  const d = await (await GET(new Request(`https://x/api/plant?latin=${encodeURIComponent(latin)}&tr=${encodeURIComponent(tr)}`))).json();
   const hits = HERO[latin].filter((pg, i) => d.photos[i]?.page === pg).length;
   const heroOk = d.photos[0]?.page === HERO[latin][0];
   if (heroOk && hits === HERO[latin].length) ok++;
-  console.log(heroOk ? "✓" : "✗", latin.padEnd(26), `${d.photos.length} foto, ilk 5'ten ${hits} tanesi seçilen`);
-  await new Promise((r) => setTimeout(r, 800)); // kaynaklara nezaket
+  console.log(heroOk ? "✓" : "✗", latin.padEnd(26), `${d.photos.length} foto, seçilen ${HERO[latin].length} fotoğraftan ${hits} tanesi başta`, d.wiki ? "" : "(Vikipedi özeti yok)");
+  await new Promise((r) => setTimeout(r, 700)); // kaynaklara nezaket
 }
-console.log(`${ok}/16 bitkide ana fotoğraf ve mozaik tam olarak seçilenler`);
+console.log(`${ok}/${total} bitkide seçilen fotoğraflar tam olarak başta`);
