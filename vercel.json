@@ -62,6 +62,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/koleksiyon/:slug([a-z-]+)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/gizlilik",
       "destination": "/gizlilik.html"
     },

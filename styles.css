@@ -470,3 +470,29 @@ dialog.tooldlg{width:min(720px,94vw)}
 .diag-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff;border-radius:var(--r-md);padding:14px 16px;margin:0 0 30px}
 .diag-cta span{color:var(--ink-2)}
 @media (max-width:560px){ .finder-res > li{grid-template-columns:72px 1fr} .fr-ph{width:72px;height:72px} }
+
+/* ---------- tüm bitkiler / koleksiyonlar ---------- */
+.browse-head{margin:6px 0 8px}
+.browse-head .lead{margin:10px 0 18px}
+.colls{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.colls .chip{text-decoration:none;color:var(--ink)}
+.colls .chip[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.browse-filters{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.seg{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.seg-l{font-weight:650;font-size:.92rem;margin-right:2px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:14px}
+.pcard{display:flex;flex-direction:column;background:var(--paper);border-radius:var(--r-lg);overflow:hidden;text-decoration:none;color:var(--ink);transition:transform .3s var(--ease)}
+.pcard:hover,.pcard:focus-visible{transform:translateY(-4px)}
+.pc-ph{position:relative;display:block;aspect-ratio:4/3;background:#C9D8CD}
+.pc-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.pc-pet{position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:50%;background:var(--paper);display:grid;place-items:center}
+.pc-pet svg{width:18px;height:18px}
+.pc-body{display:flex;flex-direction:column;gap:2px;padding:12px 14px 14px}
+.pc-body b{font-size:1.15rem;letter-spacing:-.01em}
+.pc-body i{color:var(--ink-2);font-size:.88rem}
+.pc-kind{color:var(--ink-2);font-size:.85rem;margin-top:4px}
+.pc-meta{display:flex;gap:10px;margin-top:8px}
+.pc-meta .g{display:flex;gap:2px}
+.pc-meta svg{width:16px;height:16px}
+@media (max-width:560px){ .pgrid{grid-template-columns:1fr 1fr;gap:10px} .pc-body b{font-size:1rem} .browse-filters{gap:10px} }
+@media (max-width:560px){ .colls{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;margin-right:-16px;scrollbar-width:thin} .colls .chip{flex:none} }

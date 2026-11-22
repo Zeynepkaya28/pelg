@@ -702,7 +702,8 @@ function syncUrl(mode){
     document.title=`${currentColor>0?c.n+" ":""}${current.name} bakımı ve renklerin anlamı — ${SITE_TITLE}`;
     metaDesc&&(metaDesc.content=`${current.name} (${current.latin}): ${current.blurb} ${c.n} ${current.name.toLocaleLowerCase("tr")}: ${c.m}.`.slice(0,300));
     canonical&&(canonical.href=location.origin+`/bitki/${current.id}`);
-  }else{ document.title=SITE_TITLE; metaDesc&&(metaDesc.content=DEFAULT_DESC); canonical&&(canonical.href=location.origin+"/"); }
+  }else if(!location.pathname.startsWith("/koleksiyon/")&&!location.pathname.startsWith("/dukkan/")){ // bu sayfalar kendi başlığını korur
+    document.title=SITE_TITLE; metaDesc&&(metaDesc.content=DEFAULT_DESC); canonical&&(canonical.href=location.origin+"/"); }
 }
 
 function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
@@ -1713,6 +1714,7 @@ function setPetMode(on){
   renderRelated();
   if(document.getElementById("v-renkler").classList.contains("on")) renderColors();
   if(document.getElementById("v-pazar").classList.contains("on")) renderMarket();
+  if(document.getElementById("v-bitkiler").classList.contains("on")) renderBrowse();
 }
 document.querySelectorAll("input.petmode").forEach(c=>{ c.checked=petMode; c.addEventListener("change",()=>setPetMode(c.checked)); });
 
@@ -1809,6 +1811,62 @@ function showDiag(d,i,plant){
 }
 document.getElementById("finderbtn")?.addEventListener("click",openFinder);
 document.getElementById("diagbtn")?.addEventListener("click",()=>openDiagnosis(current&&BY_ID[current.id]?current:null));
+
+/* =========================================================
+   8c. TÜM BİTKİLER ve KOLEKSİYONLAR (/koleksiyon/:ad)
+   ========================================================= */
+const COLLECTIONS={
+  "az-isik":{t:"Az ışıkta yaşayanlar",d:"Kuzeye bakan odalar ve pencereden uzak köşeler için: az ışığa en dayanıklı bitkiler.",f:f=>f.care.light[0]===1},
+  "unutkanlar":{t:"Unutkanlar için",d:"Seyrek sulamayla yaşayan, kuraklığa dayanıklı bitkiler. Fazla su bunları öldürür, azı değil.",f:f=>f.care.water[0]===1},
+  "evcil-dostu":{t:"Kedi ve köpek dostu",d:"Kedi ve köpekler için zehirsiz kabul edilen bitkiler. Yine de hayvanının bitkiyi kemirmesine izin verme.",f:f=>isPetSafe(f)},
+  "ev-bitkileri":{t:"Ev bitkileri",d:"İç mekânda, saksıda yetişen bitkiler.",f:f=>(PLACES[f.id]||[]).includes("ev")},
+  "gunesli-balkon":{t:"Güneşli balkon",d:"Günde birkaç saat doğrudan güneş alan balkon ve teraslar için.",f:f=>(PLACES[f.id]||[]).includes("balkon")&&f.care.light[0]===3},
+  "bahce":{t:"Bahçe için",d:"Toprağa dikilip yıllarca yetişebilen bitkiler.",f:f=>(PLACES[f.id]||[]).includes("bahce")},
+  "hediyelik":{t:"Hediyelik",d:"Kesme çiçek ya da saksı olarak hediye edilebilecekler.",f:f=>(PLACES[f.id]||[]).includes("hediye")},
+  "mutfak":{t:"Mutfak bitkileri",d:"Pencere önünde yetişen, yemeğe ve çaya giren bitkiler.",f:f=>["feslegen","nane","biberiye","lavanta","zeytin"].includes(f.id)},
+  "kokulu":{t:"Kokulu bitkiler",d:"Kokusuyla odayı ya da balkonu dolduranlar.",f:f=>["yasemin","lavanta","gul","sumbul","zambak","nergis","feslegen","biberiye","nane","sardunya"].includes(f.id)},
+  "kisin-acanlar":{t:"Kışın açanlar",d:"Kasım–şubat arasında renk veren bitkiler.",f:f=>["ataturkcicegi","siklamen","kalanso","kasimpati","orkide"].includes(f.id)},
+  "soganlilar":{t:"Soğanlı çiçekler",d:"Sonbaharda dikilip baharda açanlar; çiçek için kışın soğuğa ihtiyaç duyarlar.",f:f=>BULBS.includes(f.id)}
+};
+let browseColl=null, bLight=0, bWater=0;
+const LIGHT_OPTS=[[0,"Hepsi"],[1,"Az ışık"],[2,"Orta"],[3,"Bol güneş"]], WATER_OPTS=[[0,"Hepsi"],[1,"Az su"],[2,"Orta"],[3,"Sık sulama"]];
+let browseObserver=null;
+function browseThumb(f,img){
+  // fotoğraf, kart ekrana yaklaşınca yüklenir (40 bitkinin hepsi birden istenmez)
+  browseObserver ??= new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; browseObserver.unobserve(e.target);
+    const fl=BY_ID[e.target.dataset.id]; if(fl) plantMedia(fl).then(m=>{ if(m.photos[0]){ e.target.src=m.photos[0].thumb; e.target.alt=`${fl.name} fotoğrafı`; } }); }),{rootMargin:"300px"});
+  img.dataset.id=f.id; browseObserver.observe(img);
+}
+function renderBrowse(){
+  const coll=browseColl&&COLLECTIONS[browseColl];
+  document.getElementById("h-bitkiler").textContent=coll?coll.t:"Bütün bitkiler";
+  document.getElementById("browse-lead").textContent=coll?coll.d:`Rehberdeki ${FLOWERS.length} bitkinin hepsi. Işığa, suya ve evcil hayvan dostu olmasına göre süzebilirsin.`;
+  if(document.getElementById("v-bitkiler").classList.contains("on")) document.title=coll?`${coll.t} — ${SITE_TITLE}`:`Bütün bitkiler — ${SITE_TITLE}`;
+  const go=(path,e)=>{ e.preventDefault(); history.pushState(null,"",path); route(); };
+  document.getElementById("colls").replaceChildren(
+    el("a",{class:"chip","aria-current":coll?null:"page",href:"/#bitkiler",onclick:e=>go("/#bitkiler",e)},"Hepsi"),
+    ...Object.entries(COLLECTIONS).map(([k,c])=>el("a",{class:"chip","aria-current":browseColl===k?"page":null,href:`/koleksiyon/${k}`,onclick:e=>go(`/koleksiyon/${k}`,e)},c.t)));
+  const seg=(label,opts,val,set)=>el("div",{class:"seg",role:"group","aria-label":label},el("span",{class:"seg-l",text:label}),
+    ...opts.map(([v,t])=>el("button",{type:"button",class:"chip","aria-pressed":String(val===v),onclick:()=>{ set(v); renderBrowse(); }},t)));
+  const pet=el("label",{class:"chip check petchip"},el("input",{type:"checkbox",class:"petmode",onchange:e=>setPetMode(e.target.checked)}),"Evcil hayvan dostu");
+  pet.querySelector("input").checked=petMode;
+  document.getElementById("bfilters").replaceChildren(seg("Işık",LIGHT_OPTS,bLight,v=>{bLight=v;}),seg("Sulama",WATER_OPTS,bWater,v=>{bWater=v;}),pet);
+  let list=FLOWERS.filter(f=>(!coll||coll.f(f))&&(!bLight||f.care.light[0]===bLight)&&(!bWater||f.care.water[0]===bWater));
+  const before=list.length;
+  if(petMode) list=list.filter(isPetSafe);
+  list.sort((a,b)=>a.name.localeCompare(b.name,"tr"));
+  document.getElementById("bcount").textContent=`${list.length} bitki`+(petMode&&before>list.length?` · ${before-list.length} zehirli bitki gizlendi`:"");
+  const grid=document.getElementById("pgrid");
+  if(!list.length){ grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Bu seçime uyan bitki yok"}),el("p",{text:"Işık ya da sulama süzgecini “Hepsi” yapmayı dene."}))); return; }
+  grid.replaceChildren(...list.map(f=>{
+    const img=el("img",{alt:"",decoding:"async"}); browseThumb(f,img);
+    return el("a",{class:"pcard",href:`/bitki/${f.id}`,onclick:e=>{ e.preventDefault(); history.pushState(null,"",plantPath(f,0)); showFlower(f,0,{history:"none"}); route(); scrollTo({top:0}); }},
+      el("span",{class:"pc-ph"},img,isPetSafe(f)?el("span",{class:"pc-pet",title:"Kedi ve köpekler için zehirsiz"},svg(ICON.paw)):null),
+      el("span",{class:"pc-body"},el("b",{text:f.name}),el("i",{text:f.latin}),
+        el("span",{class:"pc-kind",text:f.kind}),
+        el("span",{class:"pc-meta"},gauge("sun",f.care.light[0]),gauge("drop",f.care.water[0]))));
+  }));
+}
 
 /* =========================================================
    9a. KAYDIRINCA SAÇILAN TAÇ YAPRAKLAR (2B tuval, hafif)
@@ -1956,8 +2014,9 @@ async function notifyDue(force=false){
 /* =========================================================
    10. YÖNLENDİRME + BAŞLANGIÇ
    ========================================================= */
-const VIEWS=["rehber","renkler","pazar","bitkilerim","panel"];
+const VIEWS=["rehber","bitkiler","renkler","pazar","bitkilerim","panel"];
 const SHOP_RE=/^\/dukkan\/([0-9a-f-]{36})\/?$/;
+const COLL_RE=/^\/koleksiyon\/([a-z-]{2,30})\/?$/;
 async function loadShopInfo(id){
   if(PRODUCTS.some(p=>p.shop.id===id)||!sb) return;
   const {data}=await sb.from("shops").select("id,name,city,phone,about").eq("id",id).maybeSingle();
@@ -1968,17 +2027,19 @@ async function loadShopInfo(id){
 function route(){
   const h=location.hash.slice(1), sm=location.pathname.match(SHOP_RE);
   const inShop=!!sm&&!VIEWS.includes(h)&&!isAuthHash(); // /dukkan/:id -> pazar, yalnızca o çiçekçi
-  const v=VIEWS.includes(h)?h:inShop?"pazar":"rehber";
+  const cm=location.pathname.match(COLL_RE), inColl=!!cm&&!VIEWS.includes(h)&&!isAuthHash()&&!!COLLECTIONS[cm[1]]; // /koleksiyon/:ad -> bitkiler
+  const v=VIEWS.includes(h)?h:inShop?"pazar":inColl?"bitkiler":"rehber";
+  browseColl=v==="bitkiler"?(inColl?cm[1]:null):browseColl;
   // başka bölüme geçince bitki/dükkân adresi bırakılır (/bitki/x#pazar -> /#pazar); rehbere dönünce bitkinin adresi geri gelir
   if(!isAuthHash()){
-    if(v!=="rehber"&&location.pathname!=="/"&&!inShop){ history.replaceState(null,"","/#"+v); document.title=SITE_TITLE; }
+    if(v!=="rehber"&&location.pathname!=="/"&&!inShop&&!inColl){ history.replaceState(null,"","/#"+v); document.title=SITE_TITLE; }
     else if(v==="rehber"&&current&&!current.ai&&(location.hash||sm)) syncUrl("replace");
   }
   const nextShop=inShop?sm[1]:null;
   if(nextShop!==shopFilter){ shopFilter=nextShop; shopInfo=null; if(shopFilter) loadShopInfo(shopFilter); else if(v==="pazar") document.title=SITE_TITLE; }
   VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("on",x===v));
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
-  if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel(); if(v==="bitkilerim") renderMy();
+  if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel(); if(v==="bitkilerim") renderMy(); if(v==="bitkiler") renderBrowse();
   if(stage){ stage.visible = v==="rehber"; if(stage.visible) { stage.resize(); stage.loop(); } }
   if(v!=="rehber") scrollTo({top:0});
 }
@@ -1988,7 +2049,7 @@ addEventListener("popstate",()=>{ const p=plantFromUrl(); if(p&&(p.f!==current||
 // Supabase'in e-posta dönüşü URL'de #access_token… bırakır; oturum açılınca panele geçilir
 const AUTH_RETURN=isAuthHash();
 const start=plantFromUrl();
-if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
+if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!COLL_RE.test(location.pathname)&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
 route();
 showFlower(start?.f||BY_ID.zambak,start?.ci||0,{history:start?"replace":"none"});
 loadMarket();
