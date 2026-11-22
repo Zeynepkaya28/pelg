@@ -45,6 +45,10 @@
       "destination": "/api/page?id=:id"
     },
     {
+      "source": "/dukkan/:id([0-9a-f-]{36})",
+      "destination": "/index.html"
+    },
+    {
       "source": "/gizlilik",
       "destination": "/gizlilik.html"
     },

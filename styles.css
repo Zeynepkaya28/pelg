@@ -272,3 +272,14 @@ footer nav a{color:var(--ink)}
 .report-form .field textarea{min-height:70px}
 .card.reports{margin-top:32px}
 .card.reports li{grid-template-columns:56px 1fr auto}
+
+/* ---------- stok, dükkân sayfası ---------- */
+.chip.check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.chip.check input{accent-color:var(--ink);width:16px;height:16px;margin:0}
+.stake .ph{position:relative}
+.stake .soldout{position:absolute;left:10px;top:10px;background:var(--ink);color:var(--paper);font-size:.8rem;font-weight:600;padding:3px 10px;border-radius:999px}
+.stake.out .ph img,.stake.out .ph .still{opacity:.55;filter:grayscale(.5)}
+.shophead{margin:4px 0 8px}
+.shophead .about{max-width:62ch}
+.modal-info dd a{color:var(--ink)}
+.mine .stats{font-size:.82rem;color:var(--ink-2);margin-top:2px}

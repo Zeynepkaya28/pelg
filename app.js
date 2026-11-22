@@ -851,23 +851,57 @@ async function loadMarket(){
   fc.replaceChildren(el("option",{value:""},"Tüm şehirler"),...cities.map(c=>el("option",{value:c},c))); fc.value=cities.includes(keep)?keep:"";
   renderMarket();
 }
+let shopFilter=null, shopInfo=null; // /dukkan/:id sayfasındayken o çiçekçinin kimliği
 function filteredProducts(){
   let list=PRODUCTS;
+  if(shopFilter) list=list.filter(p=>p.shop.id===shopFilter);
   if(mQuery.trim()){ const ids=new Set(mTrie.search(mQuery)); list=list.filter(p=>ids.has(p.id)); }
   const cat=document.getElementById("fcat").value, city=document.getElementById("fcity").value, sort=document.getElementById("fsort").value;
   if(cat) list=list.filter(p=>p.cat===cat); if(city) list=list.filter(p=>p.shop.city===city);
-  return [...list].sort(sort==="cheap"?(a,b)=>a.price-b.price:sort==="dear"?(a,b)=>b.price-a.price:(a,b)=>b.created-a.created);
+  if(document.getElementById("fstock").checked) list=list.filter(p=>p.stock>0);
+  const by=sort==="cheap"?(a,b)=>a.price-b.price:sort==="dear"?(a,b)=>b.price-a.price:(a,b)=>b.created-a.created;
+  // tükenenler her zaman sona
+  return [...list].sort((a,b)=>(a.stock>0?0:1)-(b.stock>0?0:1)||by(a,b));
+}
+const waLink=phone=>{ const d=String(phone||"").replace(/\D/g,""); return d.length>=10?`https://wa.me/${d}`:null; };
+/* çiçekçi sayfası başlığı */
+function renderShopHead(){
+  const box=document.getElementById("shophead");
+  if(!shopFilter){ box.replaceChildren(); document.getElementById("h-pazar").hidden=false; return; }
+  document.getElementById("h-pazar").hidden=true;
+  const s=shopInfo||PRODUCTS.find(p=>p.shop.id===shopFilter)?.shop;
+  if(!s){ box.replaceChildren(el("p",{class:"muted",text:"Çiçekçi yükleniyor…"})); return; }
+  document.title=`${s.name}${s.city?", "+s.city:""} — ${SITE_TITLE}`;
+  const wa=waLink(s.phone);
+  box.replaceChildren(el("div",{class:"shophead"},
+    el("a",{href:"/#pazar",class:"linkbtn small",onclick:e=>{ e.preventDefault(); history.pushState(null,"","/#pazar"); route(); }},"Tüm çiçekçiler"),
+    el("h1",{class:"big flush",text:s.name}),
+    el("p",{class:"muted",text:[s.city,s.phone].filter(Boolean).join(" · ")}),
+    s.about?el("p",{class:"about",text:s.about}):null,
+    el("div",{class:"row"},
+      wa?el("a",{class:"btn",href:wa,target:"_blank",rel:"noopener noreferrer",onclick:()=>{ const p=PRODUCTS.find(x=>x.shop.id===s.id); if(p) bumpStat(p.id,"wa"); }},"WhatsApp’tan yaz"):null,
+      el("button",{class:"btn ghost",type:"button",onclick:async e=>{
+        const url=location.origin+`/dukkan/${s.id}`;
+        try{ if(navigator.share) await navigator.share({title:s.name,url}); else { await navigator.clipboard.writeText(url); e.target.textContent="Bağlantı kopyalandı"; } }catch(_){}
+      }},"Dükkânı paylaş"))));
+}
+async function openShop(id,{push=true}={}){
+  if(!UUID_RE.test(id||"")) return;
+  if(push) history.pushState(null,"",`/dukkan/${id}`);
+  route();
 }
 function renderMarket(){
   const grid=document.getElementById("mgrid"), status=document.getElementById("mstatus");
+  renderShopHead();
   if(marketState==="loading"){ status.textContent="Vitrin yükleniyor…"; return; }
   if(marketState==="error"){ status.textContent=""; grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Vitrin şu an yüklenemedi"}),el("p",{text:"Bağlantını kontrol edip sayfayı yenile."}))); return; }
   const list=filteredProducts();
   status.textContent = PRODUCTS.length ? `${list.length} ürün` : "";
+  if(shopFilter&&!list.length&&!mQuery.trim()){ grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Bu çiçekçinin vitrinde ürünü yok"}),el("p",{text:"Daha sonra tekrar bak ya da diğer çiçekçilere göz at."}))); return; }
   if(!PRODUCTS.length){ grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Vitrin henüz boş"}),el("p",{text:"İlk ürünü sen ekle: Çiçekçi paneline geç, hesabını aç, dükkânını tanıt ve elindeki çiçekleri listele."}),el("a",{class:"btn",href:"#panel",style:"display:inline-block;text-decoration:none"},"Çiçekçi paneline geç"))); return; }
   if(!list.length){ grid.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Bu aramaya uyan ürün yok"}),el("p",{text:"Başka bir renk ya da şehir dene, veya filtreleri temizle."}))); return; }
-  grid.replaceChildren(...list.map(p=>el("button",{class:"stake",onclick:()=>openProduct(p),"aria-label":`${p.name}, ${p.shop.name}, ${fmtTL(p.price)}`},
-    el("div",{class:"ph"},p.photos[0]?el("img",{src:photoURL(p.photos[0]),alt:"",loading:"lazy"}):flowerThumb(p.species,p.color)),
+  grid.replaceChildren(...list.map(p=>el("button",{class:"stake"+(p.stock>0?"":" out"),onclick:()=>openProduct(p),"aria-label":`${p.name}, ${p.shop.name}, ${fmtTL(p.price)}${p.stock>0?"":", tükendi"}`},
+    el("div",{class:"ph"},p.photos[0]?el("img",{src:photoURL(p.photos[0]),alt:"",loading:"lazy"}):flowerThumb(p.species,p.color),p.stock>0?null:el("span",{class:"soldout",text:"Tükendi"})),
     el("div",{class:"body"},el("div",{class:"nm",text:p.name}),el("div",{class:"shop",text:[p.shop.name,p.shop.city].filter(Boolean).join(", ")}),el("div",{class:"price",text:fmtTL(p.price)})))));
 }
 combo(document.getElementById("mq"),document.getElementById("msugg"),{
@@ -876,7 +910,7 @@ combo(document.getElementById("mq"),document.getElementById("msugg"),{
   choose:(p,input)=>{ input.value=p.name; mQuery=p.name; renderMarket(); openProduct(p); }
 });
 document.getElementById("mq").addEventListener("input",e=>{ mQuery=e.target.value; renderMarket(); });
-["fcat","fcity","fsort"].forEach(id=>document.getElementById(id).addEventListener("change",renderMarket));
+["fcat","fcity","fsort","fstock"].forEach(id=>document.getElementById(id).addEventListener("change",renderMarket));
 document.getElementById("fcat").append(...CATS.map(c=>el("option",{value:c},c)));
 document.getElementById("fcat").addEventListener("change",paintCats);
 
@@ -914,7 +948,8 @@ function openProduct(p){
     if(v.t==="svg"){ const s=flowerThumb(p.species,p.color); s.style.cssText="position:absolute;inset:0;display:grid;place-items:center"; big.append(s); }
   };
   views.forEach((v,i)=>thumbs.append(el("button",{"aria-pressed":"false","aria-label":v.t==="3d"?"3B görünüm":`Fotoğraf ${i+1}`,onclick:()=>show(i)},v.t==="img"?el("img",{src:photoURL(v.id),alt:""}):v.t==="3d"?"3B":flowerThumb(p.species,p.color))));
-  const wa=p.shop.phone.replace(/\D/g,"");
+  const wa=waLink(p.shop.phone);
+  bumpStat(p.id,"view");
   pmodal.replaceChildren(
     el("button",{class:"close","aria-label":"Kapat",onclick:()=>pmodal.close()},"×"),
     el("div",{class:"modal-in"},
@@ -925,14 +960,15 @@ function openProduct(p){
         el("div",{class:"price",text:fmtTL(p.price)}),
         p.desc?el("p",{text:p.desc}):null,
         el("dl",null,
-          el("dt",{text:"Çiçekçi"}),el("dd",{text:p.shop.name}),
+          el("dt",{text:"Çiçekçi"}),el("dd",null,el("a",{href:`/dukkan/${p.shop.id}`,onclick:e=>{ e.preventDefault(); pmodal.close(); openShop(p.shop.id); }},p.shop.name)),
           p.shop.city?[el("dt",{text:"Şehir"}),el("dd",{text:p.shop.city})]:null,
           p.color?[el("dt",{text:"Renk"}),el("dd",{text:p.color})]:null,
           el("dt",{text:"Stok"}),el("dd",{text:p.stock>0?`${p.stock} adet`:"Tükendi"}),
           p.shop.phone?[el("dt",{text:"Telefon"}),el("dd",{text:p.shop.phone})]:null),
         p.shop.about?el("p",{class:"muted",text:p.shop.about}):null,
         el("div",{class:"row"},
-          wa.length>=10?el("a",{class:"btn",href:`https://wa.me/${wa}`,target:"_blank",rel:"noopener noreferrer",style:"text-decoration:none"},"WhatsApp’tan yaz"):null,
+          wa?el("a",{class:"btn",href:wa,target:"_blank",rel:"noopener noreferrer",style:"text-decoration:none",onclick:()=>bumpStat(p.id,"wa")},"WhatsApp’tan yaz"):null,
+          shopFilter!==p.shop.id?el("button",{class:"btn ghost",type:"button",onclick:()=>{ pmodal.close(); openShop(p.shop.id); }},"Çiçekçinin diğer ürünleri"):null,
           f?el("button",{class:"btn ghost",onclick:()=>{ pmodal.close(); location.hash="rehber"; const ci=f.colors.findIndex(x=>norm(x.n)===norm(p.color)); showFlower(f,Math.max(0,ci)); }},`${f.name} bakımını gör`):null),
         reportBox(p),
         // moderasyon: yetki veritabanında (RLS) denetlenir; düğme yalnızca kolaylık
@@ -952,6 +988,14 @@ function openProduct(p){
   show(0);
 }
 pmodal.addEventListener("click",e=>{ if(e.target===pmodal) pmodal.close(); });
+
+/* --- basit istatistik: ürün görüntülenmesi ve WhatsApp tıklaması (kişisel veri tutulmaz) --- */
+function bumpStat(id,kind){
+  if(!sb||!UUID_RE.test(id)||!["view","wa"].includes(kind)) return;
+  const k=`st:${kind}:${id}`;
+  try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){} // oturum başına bir kez
+  sb.from("product_events").insert({product_id:id,kind}).then(()=>{},()=>{});
+}
 
 /* --- "Bu ürünü bildir": herkes gönderebilir, yalnızca yöneticiler okur (RLS) --- */
 const REPORT_REASONS=["Sahte ya da yanıltıcı","Uygunsuz içerik","Yasak ya da korunan bitki","Fiyat ya da stok yanlış","Diğer"];
@@ -984,7 +1028,7 @@ pmodal.addEventListener("close",()=>{ if(mStage) mStage.paused=true; });
 /* =========================================================
    9. ÇİÇEKÇİ PANELİ (Supabase oturumu)
    ========================================================= */
-let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false, editId=null, reports=[];
+let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false, editId=null, reports=[], myStats={};
 function setFlash(m){ flash=m; }
 async function loadMine(){
   if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; reports=[]; return; }
@@ -996,6 +1040,12 @@ async function loadMine(){
   isAdmin=!!a.data;
   myShop=s.data||null;
   myProducts=(p.data||[]).map(x=>cleanProduct({...x,shop:{id:uid(),name:myShop?.name||"",city:"",phone:"",about:""}})).filter(Boolean);
+  // istatistik: ürün başına görüntülenme ve WhatsApp tıklaması (görünüm RLS'e uyar: yalnızca kendi ürünlerin)
+  myStats={};
+  if(myProducts.length){
+    const st=await sb.from("product_stats").select("product_id,views,wa_clicks").in("product_id",myProducts.map(x=>x.id));
+    for(const r of st.data||[]) if(UUID_RE.test(r.product_id||"")) myStats[r.product_id]={views:Math.max(0,+r.views||0),wa:Math.max(0,+r.wa_clicks||0)};
+  }
   reports=[];
   if(isAdmin){
     const r=await sb.from("product_reports").select("id,reason,note,created_at,product:products(id,name,photos,shop:shops(name))").order("created_at",{ascending:false}).limit(100);
@@ -1225,7 +1275,8 @@ function renderPanel(){
       el("div",{class:"row"},addBtn,ed?el("button",{type:"button",class:"btn ghost",onclick:()=>{ editId=null; renderPanel(); }},"Vazgeç"):null),pErr);
     const mine=el("ul",{class:"mine"},...myProducts.map(it=>el("li",{class:it.id===editId?"editing":null},
       el("div",{class:"t"},it.photos[0]?el("img",{src:photoURL(it.photos[0]),alt:""}):flowerThumb(it.species,it.color)),
-      el("div",null,el("b",{text:it.name}),el("div",{class:"muted",text:`${fmtTL(it.price)} · ${it.stock>0?`stok ${it.stock}`:"tükendi"}`})),
+      el("div",null,el("b",{text:it.name}),el("div",{class:"muted",text:`${fmtTL(it.price)} · ${it.stock>0?`stok ${it.stock}`:"tükendi"}`}),
+        el("div",{class:"stats",text:`${myStats[it.id]?.views||0} görüntülenme · ${myStats[it.id]?.wa||0} WhatsApp tıklaması`})),
       el("div",{class:"acts"},
         el("button",{class:"btn ghost",type:"button","aria-label":`${it.name} ürününü düzenle`,onclick:()=>{
           if(busy) return; editId=it.id; renderPanel();
@@ -1258,13 +1309,25 @@ async function reencode(file){
    10. YÖNLENDİRME + BAŞLANGIÇ
    ========================================================= */
 const VIEWS=["rehber","renkler","pazar","panel"];
+const SHOP_RE=/^\/dukkan\/([0-9a-f-]{36})\/?$/;
+async function loadShopInfo(id){
+  if(PRODUCTS.some(p=>p.shop.id===id)||!sb) return;
+  const {data}=await sb.from("shops").select("id,name,city,phone,about").eq("id",id).maybeSingle();
+  if(shopFilter!==id) return;
+  shopInfo=data&&UUID_RE.test(data.id||"")?{id:data.id,name:clampStr(data.name,60)||"Çiçekçi",city:clampStr(data.city,30),phone:/^[+0-9 ()-]{7,20}$/.test(data.phone||"")?data.phone:"",about:clampStr(data.about,300)}:{id,name:"Bu çiçekçi bulunamadı",city:"",phone:"",about:""};
+  renderMarket();
+}
 function route(){
-  const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"rehber";
-  // başka bölüme geçince bitki adresi bırakılır (/bitki/x#pazar -> /#pazar); rehbere dönünce bitkinin adresi geri gelir
+  const h=location.hash.slice(1), sm=location.pathname.match(SHOP_RE);
+  const inShop=!!sm&&!VIEWS.includes(h)&&!isAuthHash(); // /dukkan/:id -> pazar, yalnızca o çiçekçi
+  const v=VIEWS.includes(h)?h:inShop?"pazar":"rehber";
+  // başka bölüme geçince bitki/dükkân adresi bırakılır (/bitki/x#pazar -> /#pazar); rehbere dönünce bitkinin adresi geri gelir
   if(!isAuthHash()){
-    if(v!=="rehber"&&location.pathname!=="/"){ history.replaceState(null,"","/#"+v); document.title=SITE_TITLE; }
-    else if(v==="rehber"&&current&&!current.ai&&location.hash) syncUrl("replace");
+    if(v!=="rehber"&&location.pathname!=="/"&&!inShop){ history.replaceState(null,"","/#"+v); document.title=SITE_TITLE; }
+    else if(v==="rehber"&&current&&!current.ai&&(location.hash||sm)) syncUrl("replace");
   }
+  const nextShop=inShop?sm[1]:null;
+  if(nextShop!==shopFilter){ shopFilter=nextShop; shopInfo=null; if(shopFilter) loadShopInfo(shopFilter); else if(v==="pazar") document.title=SITE_TITLE; }
   VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("on",x===v));
   document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.dataset.v===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   if(v==="renkler") renderColors(); if(v==="pazar"){ renderMarket(); buildCats(); } if(v==="panel") renderPanel();
@@ -1277,7 +1340,7 @@ addEventListener("popstate",()=>{ const p=plantFromUrl(); if(p&&(p.f!==current||
 // Supabase'in e-posta dönüşü URL'de #access_token… bırakır; oturum açılınca panele geçilir
 const AUTH_RETURN=isAuthHash();
 const start=plantFromUrl();
-if(!start&&location.pathname!=="/"&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
+if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
 route();
 showFlower(start?.f||BY_ID.zambak,start?.ci||0,{history:start?"replace":"none"});
 loadMarket();

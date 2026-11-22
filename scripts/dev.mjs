@@ -22,10 +22,10 @@ if (existsSync(envFile)) {
 const vercel = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
 const securityHeaders = Object.fromEntries((vercel.headers?.[0]?.headers || []).filter((h) => h.key !== "Strict-Transport-Security").map((h) => [h.key, h.key === "Content-Security-Policy" ? h.value.replace(/; upgrade-insecure-requests/, "") : h.value]));
 // yerelde http kullanıldığı için HSTS ve upgrade-insecure-requests uygulanmaz
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8" };
-const STATIC_OK = /^\/(index\.html|app\.js|styles\.css|favicon\.svg|sitemap\.xml|robots\.txt)?$/;
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".webmanifest": "application/manifest+json" };
+const STATIC_OK = /^\/(index\.html|app\.js|styles\.css|favicon\.svg|icon-maskable\.svg|sitemap\.xml|robots\.txt|manifest\.webmanifest|sw\.js)?$/;
 const PAGES = { "/gizlilik": "gizlilik.html", "/kosullar": "kosullar.html" }; // vercel.json rewrites ile aynı
-const PLANT_RE = /^\/bitki\/[a-z]+\/?$/; // vercel.json'daki rewrites ile aynı
+const PLANT_RE = /^\/(bitki\/[a-z]+|dukkan\/[0-9a-f-]{36})\/?$/; // vercel.json'daki rewrites ile aynı (index.html'e düşenler)
 const PLANT_ID_RE = /^\/bitki\/([a-z]+)\/?$/;
 
 async function handleApi(req, res, url) {
