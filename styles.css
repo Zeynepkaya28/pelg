@@ -307,3 +307,4 @@ nav.tabs .badge{display:inline-grid;place-items:center;min-width:20px;height:20p
 .meanings .mrow .c{width:22px;height:22px;border-radius:50%;border:1px solid var(--line)}
 .meanings .mrow input{padding:9px 12px;border-radius:var(--r-sm);border:1.5px solid rgba(29,58,42,.35);background:#fff;min-width:0}
 @media (max-width:560px){ .meanings .mrow{grid-template-columns:22px 1fr} .meanings .mrow input,.meanings .mrow .btn{grid-column:1/-1} }
+nav.tabs .badge[hidden]{display:none}

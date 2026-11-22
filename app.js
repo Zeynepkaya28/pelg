@@ -229,7 +229,21 @@ for(const f of FLOWERS){
 /* =========================================================
    4. 3B ÇİÇEK SAHNESİ (Three.js, prosedürel)
    ========================================================= */
-const HAS_GL = (()=>{ try{ const c=document.createElement("canvas"); return !!(window.THREE && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } })();
+// Three.js (~600 KB) yalnızca 3B gerektiğinde yüklenir: 3B'ye geçince, fotoğrafı olmayan bitki/üründe.
+const CAN_GL = (()=>{ try{ const c=document.createElement("canvas"); return !!(c.getContext("webgl")||c.getContext("experimental-webgl")); }catch(e){ return false; } })();
+let HAS_GL = CAN_GL && !!window.THREE;
+const THREE_SRC="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js";
+const THREE_SRI="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu"; // SRI: CDN'deki dosya değişirse yüklenmez
+let threeP=null;
+function loadThree(){
+  if(!CAN_GL) return Promise.resolve(false);
+  return threeP??=new Promise(res=>{
+    if(window.THREE){ HAS_GL=true; res(true); return; }
+    const s=document.createElement("script"); s.src=THREE_SRC; s.integrity=THREE_SRI; s.crossOrigin="anonymous";
+    s.onload=()=>{ HAS_GL=!!window.THREE; res(HAS_GL); }; s.onerror=()=>{ threeP=null; res(false); };
+    document.head.append(s);
+  });
+}
 
 function petalGeo(o){
   const {len=1,wid=.35,a=.7,b=.7,cup=.3,curl=.2,ruffle=0,su=22,sv=12,seed=1}=o;
@@ -538,8 +552,23 @@ async function aiCall(body){
    ========================================================= */
 let stage=null, current=null, currentColor=0;
 const sheet=document.getElementById("sheet"), swatches=document.getElementById("swatches");
-if(HAS_GL){ stage=new FlowerStage(document.getElementById("stage")); }
-else document.getElementById("stage").append(el("div",{class:"nogl",text:"Bu tarayıcı 3B görünümü desteklemiyor. Bakım bilgileri yine de yanda."}));
+const stageHost=document.getElementById("stage");
+/** 3B sahne ilk kez gerektiğinde kurulur. */
+async function ensureStage(){
+  if(stage) return stage;
+  const ok=await loadThree();
+  if(!ok){
+    if(!stageHost.querySelector(".nogl")) stageHost.append(el("div",{class:"nogl",text:CAN_GL?"3B görünüm yüklenemedi; bağlantını kontrol et. Bakım bilgileri yine de yanda.":"Bu tarayıcı 3B görünümü desteklemiyor. Bakım bilgileri yine de yanda."}));
+    return null;
+  }
+  if(stage) return stage;
+  stage=new FlowerStage(stageHost);
+  if(current) stage.build(current,current.colors[currentColor].hex);
+  stage.visible=document.getElementById("v-rehber").classList.contains("on");
+  stage.paused=viewMode==="photo";
+  if(!stage.paused&&stage.visible) stage.loop();
+  return stage;
+}
 document.querySelectorAll("#stage .views .chip").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll("#stage .views .chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); stage&&stage.setView(b.dataset.view);
 }));
@@ -617,7 +646,7 @@ function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
     BY_ID[f.id]?myPlantButton(f):null,
     askBox(f)
   );
-  renderMeaning(); loadMedia(f);
+  chose3d=false; renderMeaning(); loadMedia(f);
   if(scroll && innerWidth<900) sheet.scrollIntoView({behavior:reduced?"auto":"smooth"});
 }
 function renderMeaning(){
@@ -628,7 +657,7 @@ function renderMeaning(){
 }
 function pickColor(i){
   currentColor=i; swatches.querySelectorAll(".sw").forEach((b,k)=>b.setAttribute("aria-pressed",String(k===i)));
-  stage&&stage.setColor(current.colors[i].hex); renderMeaning(); syncUrl("replace"); if(viewMode==="photo") setMode("3d");
+  stage&&stage.setColor(current.colors[i].hex); renderMeaning(); syncUrl("replace"); if(viewMode==="photo"){ chose3d=true; setMode("3d"); }
 }
 
 /* --- gerçek fotoğraflar (iNaturalist / Wikimedia Commons) + Vikipedi özeti --- */
@@ -641,16 +670,19 @@ function setMode(m){
   document.querySelector("#stage .views").hidden = m==="photo";
   document.querySelector("#stage .hint").hidden = m==="photo";
   if(stage){ stage.paused = m==="photo"; if(!stage.paused) stage.loop(); }
+  else if(m==="3d") ensureStage().then(s=>{ if(s&&viewMode==="3d"){ s.paused=false; s.resize(); s.loop(); } });
   [...gallery.querySelectorAll("button")].forEach(b=>b.setAttribute("aria-pressed",String(m==="3d"?b.dataset.k==="3d":b.dataset.k===String(curPhoto))));
 }
-document.querySelectorAll("#stage .modes .chip").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.mode==="photo"&&!curPhotos.length) return; setMode(b.dataset.mode); }));
+let chose3d=false; // kullanıcı bu bitkide 3B'yi kendisi seçtiyse geç gelen fotoğraflar onu geri çevirmez
+document.querySelectorAll("#stage .modes .chip").forEach(b=>b.addEventListener("click",()=>{ if(b.dataset.mode==="photo"&&!curPhotos.length) return; chose3d=b.dataset.mode==="3d"; setMode(b.dataset.mode); }));
 photoImg.addEventListener("load",()=>photoImg.classList.add("in"));
-function showPhoto(i){
-  const p=curPhotos[i]; if(!p) return; curPhoto=i;
+function preparePhoto(i){
+  const p=curPhotos[i]; if(!p) return false; curPhoto=i;
   photoImg.classList.remove("in"); photoImg.src=p.src; photoImg.alt=`${current.name} fotoğrafı`;
   credit.replaceChildren("Fotoğraf: ",p.author,` · ${p.license} · `,el("a",{href:p.page,target:"_blank",rel:"noopener noreferrer"},p.source));
-  setMode("photo");
+  return true;
 }
+function showPhoto(i){ if(preparePhoto(i)){ chose3d=false; setMode("photo"); } }
 async function loadMedia(f){
   const tok=++mediaToken; curPhotos=[];
   gallery.replaceChildren(el("p",{class:"muted",text:"Fotoğraflar yükleniyor…"}));
@@ -663,8 +695,8 @@ async function loadMedia(f){
     setMode("3d"); return;
   }
   gallery.replaceChildren(...curPhotos.map((p,i)=>el("button",{"data-k":String(i),"aria-label":`Fotoğraf ${i+1}: ${p.author}`,onclick:()=>showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}))),
-    el("button",{"data-k":"3d","aria-label":"3B görünüm",class:"t3d",onclick:()=>setMode("3d")},"3B"));
-  showPhoto(0);
+    el("button",{"data-k":"3d","aria-label":"3B görünüm",class:"t3d",onclick:()=>{ chose3d=true; setMode("3d"); }},"3B"));
+  if(chose3d&&viewMode==="3d"){ preparePhoto(0); setMode("3d"); } else showPhoto(0);
 }
 
 /* --- yapay zekâya soru --- */
@@ -835,9 +867,16 @@ function renderColors(){
 }
 
 
-let stillStage=null; const STILLS=new Map();
+let stillStage=null; const STILLS=new Map(); let thumbsWaiting=false;
 function flowerThumb(species,color){
   const f=BY_ID[species];
+  if(f&&CAN_GL&&!HAS_GL){
+    // 3B kütüphanesi henüz yok: yükle, gelince görünen listeleri yeniden çiz
+    if(!thumbsWaiting){ thumbsWaiting=true; loadThree().then(ok=>{ thumbsWaiting=false; if(!ok) return;
+      if(document.getElementById("v-pazar").classList.contains("on")) renderMarket();
+      if(document.getElementById("v-panel").classList.contains("on")) renderPanel(); }); }
+    return el("span",{class:"nophoto",text:"3B önizleme hazırlanıyor…"});
+  }
   if(f&&HAS_GL){
     const c=(f.colors.find(x=>norm(x.n)===norm(color))||f.colors[0]), key=f.id+c.hex;
     if(!STILLS.has(key)){ try{ stillStage=stillStage||new FlowerStage(null,{still:true}); STILLS.set(key,stillStage.still(f,c.hex)); }catch(e){ STILLS.set(key,""); } }
@@ -961,9 +1000,11 @@ const pmodal=document.getElementById("pmodal"); let mStage=null; const big=el("d
 function openProduct(p){
   const f=BY_ID[p.species];
   const thumbs=el("div",{class:"thumbs",role:"group","aria-label":"Görseller"});
-  const views=[]; p.photos.forEach(id=>views.push({t:"img",id})); if(f&&HAS_GL) views.push({t:"3d"});
+  const views=[]; p.photos.forEach(id=>views.push({t:"img",id})); if(f&&CAN_GL) views.push({t:"3d"});
   if(!views.length) views.push({t:"svg"});
+  let cur=0;
   const show=i=>{
+    cur=i;
     [...thumbs.children].forEach((b,k)=>b.setAttribute("aria-pressed",String(k===i)));
     const v=views[i]; big.querySelectorAll(":scope > img, :scope > span").forEach(n=>n.remove());
     if(mStage){ mStage.renderer.domElement.style.display = v.t==="3d"?"block":"none"; mStage.paused = v.t!=="3d"; if(!mStage.paused) mStage.loop(); }
@@ -1004,11 +1045,14 @@ function openProduct(p){
           pmodal.close(); loadMarket();
         }},"Yönetici: ürünü kaldır"):null)));
   pmodal.showModal();
-  if(f&&HAS_GL){
+  if(mStage) mStage.renderer.domElement.style.display="none"; // önceki üründen kalan sahne
+  show(0);
+  if(f&&CAN_GL) loadThree().then(ok=>{
+    if(!ok||!pmodal.open) return;
     if(!mStage){ mStage=new FlowerStage(big); }
     mStage.resize(); const ci=f.colors.findIndex(x=>norm(x.n)===norm(p.color)); mStage.build(f,f.colors[Math.max(0,ci)].hex); mStage.visible=true;
-  }
-  show(0);
+    show(cur);
+  });
 }
 pmodal.addEventListener("click",e=>{ if(e.target===pmodal) pmodal.close(); });
 

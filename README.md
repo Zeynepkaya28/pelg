@@ -33,8 +33,17 @@ Yayın: GitHub'daki `main` dalına her `git push` Vercel'de otomatik olarak canl
 | `api/_lib.js` | Ortak: zaman aşımı, köken kontrolü, hız sınırı, AI çağrısı, kart doğrulama |
 | `gizlilik.html`, `kosullar.html`, `404.html` | KVKK aydınlatma metni, kullanım koşulları, bulunamadı sayfası |
 | `.github/workflows/test.yml` | Her push'ta sözdizimi kontrolü ve birim testleri |
-| `supabase/migrations/` | 001 şema, 002 `plant_cache` + `admins`, 003 silme politikaları, 004 ürün bildirimleri |
+| `sw.js`, `manifest.webmanifest` | PWA: ana ekrana eklenebilir, rehber çevrimdışı açılır (önce ağ, ağ yoksa önbellek) |
+| `supabase/migrations/` | 001 şema, 002 `plant_cache` + `admins`, 003 silme politikaları, 004 ürün bildirimleri, 005 ürün istatistikleri, 006 çiçek anlamları |
 | `tests/rls-check.sql` | İki sahte hesapla RLS denemesi (sonunda geri alınır) |
+
+## Özellikler (kısaca)
+
+- **Rehber:** 16 bitki, trie arama, gerçek fotoğraflar + 3B (Three.js yalnızca gerektiğinde yüklenir), mevsim notları, her bitkiye adres (`/bitki/orkide?renk=pembe`) ve paylaşım önizlemesi.
+- **Bitkilerim:** tarayıcıda saklanan liste, sulama günü, `.ics` takvim dosyası, site açıkken bildirim.
+- **Pazar:** arama, kategori/şehir/stok süzgeci, çiçekçi sayfaları (`/dukkan/:id`), ürün bildirme.
+- **Çiçekçi paneli:** dükkân, ürün ekle/düzenle/kaldır, görüntülenme ve WhatsApp sayıları, şifremi unuttum, dükkânı silme.
+- **Yönetici:** bildirimler, ürün kaldırma, çiçek anlamlarını düzenleme.
 
 ## Elle yapılacaklar
 

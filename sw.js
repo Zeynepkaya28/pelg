@@ -1,6 +1,6 @@
 // Sera Defteri — service worker: çevrimdışı rehber ve hızlı açılış.
 // Yalnızca kendi alan adımızdaki dosyalar ve CDN'deki iki kütüphane önbelleğe alınır; Supabase ve kişisel veri asla.
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`, DATA = `data-${VERSION}`;
 const CDN = [
   "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js",
@@ -34,12 +34,6 @@ async function networkFirst(req, cacheName, fallbackUrl) {
     return (await c.match(req)) || (fallbackUrl && (await caches.match(fallbackUrl))) || Response.error();
   }
 }
-async function staleWhileRevalidate(req) {
-  const c = await caches.open(SHELL);
-  const hit = await c.match(req);
-  const net = fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => hit);
-  return hit || net;
-}
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
@@ -50,7 +44,8 @@ self.addEventListener("fetch", (e) => {
   if (req.mode === "navigate") { e.respondWith(networkFirst(req, SHELL, "/")); return; }
   if (url.pathname === "/api/plant") { e.respondWith(networkFirst(req, DATA)); return; } // gezilen bitkilerin fotoğraf listesi
   if (url.pathname.startsWith("/api/")) return; // diğer uçlar: hep ağdan
-  e.respondWith(staleWhileRevalidate(req));
+  // site dosyaları da önce ağdan: yayından sonra herkes yeni sürümü alır; ağ yoksa önbellek
+  e.respondWith(networkFirst(req, SHELL));
 });
 
 // bildirime tıklanınca Bitkilerim'i aç
