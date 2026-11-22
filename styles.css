@@ -253,3 +253,22 @@ h1.big.flush{margin-bottom:0}
 @media (max-width:560px){ .mine li{grid-template-columns:56px 1fr} .mine .acts{grid-column:1/-1;justify-content:flex-start} }
 .card.narrow{max-width:440px}
 .linkbtn.small{font-size:.88rem;justify-self:start;color:var(--ink-2)}
+
+/* ---------- tek başına sayfalar (404, gizlilik, koşullar) ---------- */
+main.page{max-width:760px}
+main.page .btn{text-decoration:none;display:inline-block}
+.doc h2{font-size:1.45rem;letter-spacing:-.02em;margin:34px 0 8px}
+.doc p,.doc li{max-width:68ch}
+.doc ul{padding-left:1.2em}
+.doc .note{background:#FBEFD2;border-radius:var(--r-md);padding:14px 18px}
+.doc .meta{color:var(--ink-2);font-size:.92rem}
+footer nav{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+footer nav a{color:var(--ink)}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;margin:4px 0 14px}
+.consent input{margin-top:4px;width:18px;height:18px;flex:none;accent-color:var(--ink)}
+.consent a{color:var(--ink)}
+.danger-zone{margin-top:28px;border-top:1.5px dashed var(--line);padding-top:18px}
+.report{margin-top:20px;border-top:1.5px dashed var(--line);padding-top:14px}
+.report-form .field textarea{min-height:70px}
+.card.reports{margin-top:32px}
+.card.reports li{grid-template-columns:56px 1fr auto}

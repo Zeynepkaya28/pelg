@@ -28,13 +28,19 @@ Yayın: GitHub'daki `main` dalına her `git push` Vercel'de otomatik olarak canl
 | `api/care.js` | Vikipedi (TR/EN) + Wikidata + GBIF ham verisi → yapay zekâyla Türkçe kart → `plant_cache` (30 gün) |
 | `api/identify.js` | Görsel tanıyan modelle fotoğraftan tanıma, AI Gateway üzerinden (≤4 MB, jpeg/png/webp, imza kontrolü) |
 | `api/stock.js` | Openverse kategori görselleri (CC BY / BY-SA / CC0 / kamu malı, atıflı; tür tanımada kullanılmaz) |
+| `api/page.js` | `/bitki/:id` sayfası: paylaşım önizlemesi için bitkiye özel başlık, açıklama ve Open Graph etiketleri |
+| `api/_plants.js` | `app.js`'teki bitki verisinin sunucu kopyası — elle düzenleme, `node scripts/gen-plants.mjs` ile üret |
 | `api/_lib.js` | Ortak: zaman aşımı, köken kontrolü, hız sınırı, AI çağrısı, kart doğrulama |
-| `supabase/migrations/` | 001 şema, 002 `plant_cache` + `admins`, 003 silme politikaları |
+| `gizlilik.html`, `kosullar.html`, `404.html` | KVKK aydınlatma metni, kullanım koşulları, bulunamadı sayfası |
+| `.github/workflows/test.yml` | Her push'ta sözdizimi kontrolü ve birim testleri |
+| `supabase/migrations/` | 001 şema, 002 `plant_cache` + `admins`, 003 silme politikaları, 004 ürün bildirimleri |
 | `tests/rls-check.sql` | İki sahte hesapla RLS denemesi (sonunda geri alınır) |
 
 ## Elle yapılacaklar
 
 1. **Supabase → Authentication → URL Configuration:** Site URL = canlı adres; Redirect URLs = `https://<canlı-adres>/**` ve `http://localhost:3000/**`.
 2. **Yapay zekâ:** Vercel → AI Gateway sayfasında kredi kartı ekle (ücretsiz krediler de bununla açılır). Kart yoksa soru sorma, yeni bitki kartı ve fotoğraftan tanıma hata verir; rehber ve pazar çalışır.
-3. **Yönetici eklemek:** Supabase SQL düzenleyicisinde `insert into public.admins (user_id) values ('<kullanıcı-uuid>');`
-4. **Kalıcı hız sınırı:** bellek içi sınır her sunucu örneğinde ayrıdır; canlıda Vercel Firewall'da `/api/ai`, `/api/care`, `/api/identify` için IP başına kural ekle.
+3. **Yasal metinler:** `gizlilik.html` ve `kosullar.html` içindeki `[Veri sorumlusunun adı / unvanı]`, `[adres]` ve `[e-posta adresi]` alanlarını doldur; yayından önce bir hukukçuya gözden geçirt.
+4. **E-posta:** Supabase'in hazır e-posta servisi sınırlıdır; gerçek kayıtlar için Authentication → SMTP Settings'ten kendi e-posta servisini (ör. Resend) bağla.
+5. **Yönetici eklemek:** Supabase SQL düzenleyicisinde `insert into public.admins (user_id) values ('<kullanıcı-uuid>');`
+6. **Kalıcı hız sınırı:** bellek içi sınır her sunucu örneğinde ayrıdır; canlıda Vercel Firewall'da `/api/ai`, `/api/care`, `/api/identify` için IP başına kural ekle.

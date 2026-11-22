@@ -42,7 +42,20 @@
   "rewrites": [
     {
       "source": "/bitki/:id([a-z]+)",
-      "destination": "/index.html"
+      "destination": "/api/page?id=:id"
+    },
+    {
+      "source": "/gizlilik",
+      "destination": "/gizlilik.html"
+    },
+    {
+      "source": "/kosullar",
+      "destination": "/kosullar.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/page.js": {
+      "includeFiles": "index.html"
+    }
+  }
 }

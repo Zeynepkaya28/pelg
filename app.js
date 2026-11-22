@@ -934,6 +934,7 @@ function openProduct(p){
         el("div",{class:"row"},
           wa.length>=10?el("a",{class:"btn",href:`https://wa.me/${wa}`,target:"_blank",rel:"noopener noreferrer",style:"text-decoration:none"},"WhatsApp’tan yaz"):null,
           f?el("button",{class:"btn ghost",onclick:()=>{ pmodal.close(); location.hash="rehber"; const ci=f.colors.findIndex(x=>norm(x.n)===norm(p.color)); showFlower(f,Math.max(0,ci)); }},`${f.name} bakımını gör`):null),
+        reportBox(p),
         // moderasyon: yetki veritabanında (RLS) denetlenir; düğme yalnızca kolaylık
         isAdmin&&p.shop.id!==uid()?el("button",{class:"btn ghost danger",type:"button",onclick:async e=>{
           if(!confirm(`“${p.name}” vitrinden kaldırılsın mı? Bu geri alınamaz.`)) return;
@@ -951,22 +952,76 @@ function openProduct(p){
   show(0);
 }
 pmodal.addEventListener("click",e=>{ if(e.target===pmodal) pmodal.close(); });
+
+/* --- "Bu ürünü bildir": herkes gönderebilir, yalnızca yöneticiler okur (RLS) --- */
+const REPORT_REASONS=["Sahte ya da yanıltıcı","Uygunsuz içerik","Yasak ya da korunan bitki","Fiyat ya da stok yanlış","Diğer"];
+const reportedKey=id=>"rep:"+id;
+function alreadyReported(id){ try{ return sessionStorage.getItem(reportedKey(id))==="1"; }catch(e){ return false; } }
+function reportBox(p){
+  const wrap=el("div",{class:"report"});
+  if(alreadyReported(p.id)){ wrap.append(el("p",{class:"muted",text:"Bu ürünü bildirdin, teşekkürler."})); return wrap; }
+  const open=el("button",{type:"button",class:"linkbtn small",onclick:()=>{
+    const reason=el("select",{id:"rp-reason"},...REPORT_REASONS.map(r=>el("option",{value:r},r)));
+    const note=el("textarea",{id:"rp-note",maxlength:"300",placeholder:"İstersen kısaca açıkla (en fazla 300 karakter)"});
+    const msg=el("p",{class:"err","aria-live":"polite"}), send=el("button",{class:"btn ghost",type:"submit",text:"Bildirimi gönder"});
+    wrap.replaceChildren(el("form",{class:"report-form",onsubmit:async e=>{
+      e.preventDefault(); msg.textContent=""; send.disabled=true;
+      const {error}=await sb.from("product_reports").insert({product_id:p.id,reason:REPORT_REASONS.includes(reason.value)?reason.value:"Diğer",note:clampStr(note.value,300)});
+      send.disabled=false;
+      if(error){ msg.textContent=/Çok fazla/.test(error.message)?"Bu ürün için çok fazla bildirim geldi; daha sonra tekrar dene.":"Bildirim gönderilemedi, tekrar dene."; return; }
+      try{ sessionStorage.setItem(reportedKey(p.id),"1"); }catch(e){}
+      wrap.replaceChildren(el("p",{class:"muted",role:"status",text:"Teşekkürler. Bildirimin yöneticilere iletildi."}));
+    }},
+      el("div",{class:"field"},el("label",{for:"rp-reason",text:"Neden bildiriyorsun?"}),reason),
+      el("div",{class:"field"},el("label",{for:"rp-note",text:"Not"}),note),
+      el("div",{class:"row"},send,el("button",{type:"button",class:"linkbtn small",onclick:()=>wrap.replaceWith(reportBox(p))},"Vazgeç")),msg));
+    reason.focus();
+  }},"Bu ürünü bildir");
+  wrap.append(open); return wrap;
+}
 pmodal.addEventListener("close",()=>{ if(mStage) mStage.paused=true; });
 
 /* =========================================================
    9. ÇİÇEKÇİ PANELİ (Supabase oturumu)
    ========================================================= */
-let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false, editId=null;
+let myShop=null, myProducts=[], busy=false, flash="", authMode="login", isAdmin=false, editId=null, reports=[];
 function setFlash(m){ flash=m; }
 async function loadMine(){
-  if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; return; }
-  sb.from("admins").select("user_id").eq("user_id",uid()).maybeSingle().then(r=>{ isAdmin=!!r.data; });
-  const [s,p]=await Promise.all([
+  if(!sb||!uid()){ myShop=null; myProducts=[]; isAdmin=false; reports=[]; return; }
+  const [a,s,p]=await Promise.all([
+    sb.from("admins").select("user_id").eq("user_id",uid()).maybeSingle(),
     sb.from("shops").select("id,name,city,phone,about").eq("id",uid()).maybeSingle(),
     sb.from("products").select("id,name,cat,species,color,price,stock,description,photos,created_at").eq("shop_id",uid()).order("created_at",{ascending:false})
   ]);
+  isAdmin=!!a.data;
   myShop=s.data||null;
   myProducts=(p.data||[]).map(x=>cleanProduct({...x,shop:{id:uid(),name:myShop?.name||"",city:"",phone:"",about:""}})).filter(Boolean);
+  reports=[];
+  if(isAdmin){
+    const r=await sb.from("product_reports").select("id,reason,note,created_at,product:products(id,name,photos,shop:shops(name))").order("created_at",{ascending:false}).limit(100);
+    reports=(r.data||[]).filter(x=>UUID_RE.test(x.id||"")&&x.product&&UUID_RE.test(x.product.id||"")).map(x=>({
+      id:x.id,reason:REPORT_REASONS.includes(x.reason)?x.reason:"Diğer",note:clampStr(x.note,300),created:Date.parse(x.created_at)||0,
+      product:{id:x.product.id,name:clampStr(x.product.name,60),photos:(Array.isArray(x.product.photos)?x.product.photos:[]).filter(ph=>PHOTO_RE.test(ph)),shop:clampStr(x.product.shop?.name,60)}}));
+  }
+}
+/* yönetici: bildirilen ürünler */
+function reportsCard(){
+  const fmt=t=>new Intl.DateTimeFormat("tr-TR",{dateStyle:"medium",timeStyle:"short"}).format(t);
+  const act=async(e,fn)=>{ if(busy) return; busy=true; e.target.disabled=true; const msg=await fn(); busy=false; setFlash(msg); await loadMine(); renderPanel(); loadMarket(); };
+  return el("div",{class:"card reports"},
+    el("h3",{text:`Bildirimler (${reports.length})`}),
+    reports.length?el("ul",{class:"mine"},...reports.map(r=>el("li",null,
+      el("div",{class:"t"},r.product.photos[0]?el("img",{src:photoURL(r.product.photos[0]),alt:""}):null),
+      el("div",null,el("b",{text:`${r.product.name} · ${r.product.shop||"Çiçekçi"}`}),
+        el("div",{class:"muted",text:`${r.reason} · ${fmt(r.created)}`}),r.note?el("div",{text:r.note}):null),
+      el("div",{class:"acts"},
+        el("button",{class:"btn ghost danger",type:"button",onclick:e=>{
+          if(!confirm(`“${r.product.name}” vitrinden kaldırılsın mı? Bu geri alınamaz.`)) return;
+          act(e,async()=>{ const {error}=await sb.from("products").delete().eq("id",r.product.id); if(error) return "Ürün kaldırılamadı.";
+            if(r.product.photos.length) await sb.storage.from("product-photos").remove(r.product.photos); return "Ürün kaldırıldı; bildirimleri de kapandı."; });
+        }},"Ürünü kaldır"),
+        el("button",{class:"btn ghost",type:"button",onclick:e=>act(e,async()=>{ const {error}=await sb.from("product_reports").delete().eq("id",r.id); return error?"Bildirim kapatılamadı.":"Bildirim kapatıldı."; })},"Bildirimi kapat"))))):
+      el("p",{class:"muted",text:"Bekleyen bildirim yok."}));
 }
 /* --- şifremi unuttum: e-postaya sıfırlama bağlantısı --- */
 function resetForm(box){
@@ -1018,18 +1073,24 @@ function authForm(box){
   const email=el("input",{id:"a-email",type:"email",autocomplete:"email",required:true,maxlength:"120"});
   const pass=el("input",{id:"a-pass",type:"password",autocomplete:authMode==="login"?"current-password":"new-password",required:true,minlength:"8",maxlength:"72"});
   const err=el("p",{class:"err","aria-live":"polite"}), btn=el("button",{class:"btn",type:"submit",text:authMode==="login"?"Giriş yap":"Hesap oluştur"});
+  const agree=el("input",{type:"checkbox",id:"a-agree"});
+  const consent=authMode==="signup"?el("label",{class:"consent",for:"a-agree"},agree,el("span",null,
+    el("a",{href:"/kosullar",target:"_blank",rel:"noopener"},"Kullanım koşullarını")," kabul ediyorum; ",
+    el("a",{href:"/gizlilik",target:"_blank",rel:"noopener"},"Aydınlatma Metni"),"’ni okudum. Dükkân adım, şehrim ve telefonumun sitede herkese açık görüneceğini biliyorum.")):null;
   const form=el("form",{class:"card",style:"max-width:440px",onsubmit:async e=>{
     e.preventDefault(); err.textContent="";
     const em=clampStr(email.value,120), pw=pass.value;
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ err.textContent="Geçerli bir e-posta adresi yaz."; return; }
     if(pw.length<8){ err.textContent="Şifre en az 8 karakter olmalı."; return; }
+    if(authMode==="signup"&&!agree.checked){ err.textContent="Devam etmek için kullanım koşullarını kabul etmen gerekiyor."; agree.focus(); return; }
     btn.disabled=true;
     try{
       if(authMode==="login"){
         const {error}=await sb.auth.signInWithPassword({email:em,password:pw});
         if(error) err.textContent = /confirm/i.test(error.message) ? "E-posta adresin henüz onaylanmamış. Gelen kutundaki bağlantıya tıkla." : "E-posta ya da şifre hatalı.";
       }else{
-        const {data,error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+"/#panel"}});
+        // onayın kaydı: hangi sürümü ne zaman kabul ettiği kullanıcı bilgisinde saklanır
+        const {data,error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+"/#panel",data:{terms_version:1,privacy_version:1,consent_at:new Date().toISOString()}}});
         if(error) err.textContent = /rate|seconds/i.test(error.message) ? "Çok sık deneme yapıldı; birkaç dakika sonra tekrar dene." : /password/i.test(error.message) ? "Bu şifre çok zayıf; daha uzun ve tahmin edilmesi zor bir şifre seç." : "Hesap oluşturulamadı: "+clampStr(error.message,120);
         else if(!data.session){ box.replaceChildren(el("div",{class:"empty"},el("h3",{text:"Gelen kutunu kontrol et"}),el("p",{text:`${em} adresine bir onay bağlantısı gönderdik. Bağlantıya tıkladıktan sonra buraya dönüp giriş yapabilirsin.`}),el("button",{class:"btn ghost",onclick:()=>{authMode="login";renderPanel();}},"Giriş ekranına dön"))); return; }
       }
@@ -1039,7 +1100,7 @@ function authForm(box){
     el("div",{class:"field"},el("label",{for:"a-email",text:"E-posta"}),email),
     el("div",{class:"field"},el("label",{for:"a-pass",text:"Şifre"}),pass,el("span",{class:"help",text:"En az 8 karakter."}),
       authMode==="login"?el("button",{type:"button",class:"linkbtn small",onclick:()=>{authMode="reset";renderPanel();}},"Şifremi unuttum"):null),
-    btn,err,
+    consent,btn,err,
     el("p",{class:"muted"},authMode==="login"?"Hesabın yok mu? ":"Zaten hesabın var mı? ",
       el("button",{type:"button",class:"linkbtn",onclick:()=>{authMode=authMode==="login"?"signup":"login";renderPanel();}},authMode==="login"?"Hesap oluştur":"Giriş yap")));
   box.replaceChildren(form);
@@ -1067,7 +1128,20 @@ function renderPanel(){
     el("div",{class:"two"},el("div",{class:"field"},el("label",{for:"s-city",text:"Şehir"}),fCity),el("div",{class:"field"},el("label",{for:"s-phone",text:"Telefon"}),fPhone)),
     el("div",{class:"field"},el("label",{for:"s-about",text:"Kısa tanıtım"}),fAbout),
     el("button",{class:"btn",type:"submit",text:myShop?"Bilgileri kaydet":"Dükkânı aç"}),sErr,
-    el("p",{class:"muted",style:"margin-top:18px"},session.user.email||"", " · ",el("button",{type:"button",class:"linkbtn",onclick:async()=>{ await sb.auth.signOut(); }},"Çıkış yap")));
+    el("p",{class:"muted",style:"margin-top:18px"},session.user.email||"", " · ",el("button",{type:"button",class:"linkbtn",onclick:async()=>{ await sb.auth.signOut(); }},"Çıkış yap")),
+    myShop?el("div",{class:"danger-zone"},
+      el("p",{class:"muted",text:"Dükkânını silersen dükkân bilgilerin, bütün ürünlerin ve ürün fotoğrafların hemen silinir. Bu geri alınamaz."}),
+      el("button",{type:"button",class:"btn ghost danger",onclick:async e=>{
+        if(busy) return;
+        if(!confirm(`“${myShop.name}” dükkânı, ${myProducts.length} ürünü ve fotoğraflarıyla birlikte silinsin mi? Bu geri alınamaz.`)) return;
+        busy=true; e.target.disabled=true;
+        const photos=myProducts.flatMap(p=>p.photos);
+        const {error}=await sb.from("shops").delete().eq("id",uid()); // ürünler veritabanında birlikte silinir (on delete cascade)
+        if(!error&&photos.length) await sb.storage.from("product-photos").remove(photos);
+        busy=false; editId=null;
+        setFlash(error?"Dükkân silinemedi, tekrar dene.":"Dükkânın, ürünlerin ve fotoğrafların silindi. Hesabının tamamen kapatılmasını istersen Aydınlatma Metni’ndeki adrese yazabilirsin.");
+        await loadMine(); renderPanel(); loadMarket();
+      }},"Dükkânımı sil")):null);
 
   const right=el("div",{class:"card"});
   if(!myShop){ right.append(el("h3",{text:"Ürünler"}),el("p",{class:"muted",text:"Önce dükkân bilgilerini kaydet; sonra ürün ekleyebilirsin."})); }
@@ -1169,7 +1243,7 @@ function renderPanel(){
     right.append(prodForm,el("h3",{style:"margin-top:30px",text:`Vitrindeki ürünlerin (${myProducts.length})`}),myProducts.length?mine:el("p",{class:"muted",text:"Henüz ürün yok."}));
   }
   const fl=flash; flash="";
-  box.replaceChildren(fl?el("p",{class:"ok",role:"status",style:"font-size:1.05rem;margin:0 0 16px",text:fl}):"",el("div",{class:"panel"},shopForm,right));
+  box.replaceChildren(fl?el("p",{class:"ok",role:"status",style:"font-size:1.05rem;margin:0 0 16px",text:fl}):"",el("div",{class:"panel"},shopForm,right),isAdmin?reportsCard():"");
 }
 // Görseli yeniden kodla: boyutu küçült, EXIF/konum ve gömülü veriyi at
 async function reencode(file){

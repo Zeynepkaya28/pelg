@@ -6,3 +6,6 @@ scripts
 supabase
 PROMPT.md
 README.md
+
+# GitHub Actions dosyaları yayına girmez
+.github

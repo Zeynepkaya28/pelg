@@ -98,3 +98,27 @@ test("sameOrigin: GET'te Sec-Fetch-Site", () => {
   assert.equal(sameOrigin(h({ "sec-fetch-site": "cross-site" })), false);
   assert.equal(sameOrigin(h({})), false);
 });
+
+test("api/_plants.js app.js ile aynı (değiştiyse: node scripts/gen-plants.mjs)", async () => {
+  const { buildPlants } = await import("../scripts/gen-plants.mjs");
+  const { readFileSync } = await import("node:fs");
+  assert.equal(readFileSync(new URL("../api/_plants.js", import.meta.url), "utf8"), buildPlants());
+});
+
+test("paylaşım önizlemesi: başlık, açıklama, og etiketleri ve kaçış", async () => {
+  const { renderHead } = await import("../api/page.js");
+  const html = '<html><head><title>Sera Defteri</title>\n<meta name="description" content="eski">\n<link rel="canonical" href="https://x/">\n<meta property="og:title" content="eski">\n</head><body></body></html>';
+  const out = renderHead(html, { title: 'Pembe "Orkide" <b>', desc: "a & b", url: "https://pelg.vercel.app/bitki/orkide", image: { src: "https://img.example/a.jpg", alt: "foto" } });
+  assert.match(out, /<title>Pembe &quot;Orkide&quot; &lt;b&gt;<\/title>/);
+  assert.match(out, /<meta name="description" content="a &amp; b">/);
+  assert.match(out, /<link rel="canonical" href="https:\/\/pelg.vercel.app\/bitki\/orkide">/);
+  assert.match(out, /<meta property="og:image" content="https:\/\/img.example\/a.jpg">/);
+  assert.equal((out.match(/og:title/g) || []).length, 1);
+  assert.ok(!out.includes("<b>"));
+});
+
+test("/api/page: bilinmeyen bitki 404", async () => {
+  const { GET } = await import("../api/page.js");
+  assert.equal((await GET(new Request("https://x/api/page?id=yokboyle"))).status, 404);
+  assert.equal((await GET(new Request("https://x/api/page?id=__proto__"))).status, 404);
+});
