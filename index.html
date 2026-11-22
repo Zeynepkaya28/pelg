@@ -47,7 +47,9 @@
       <div class="idrow">
         <button class="chip" id="idbtn" type="button">Fotoğraftan tanı</button>
         <input id="idfile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-        <span class="muted">Adını bilmiyor musun? Fotoğrafını yükle.</span>
+        <button class="chip" id="finderbtn" type="button">Bana uygun bitki bul</button>
+        <button class="chip" id="diagbtn" type="button">Bitkimde sorun var</button>
+        <label class="chip check petchip"><input type="checkbox" class="petmode"> Evcil hayvan dostu</label>
       </div>
     </div>
   </div>
@@ -120,6 +122,7 @@
     <label class="sr" for="fsort">Sırala</label>
     <select id="fsort"><option value="new">En yeni</option><option value="cheap">Fiyat: düşükten</option><option value="dear">Fiyat: yüksekten</option></select>
     <label class="chip check"><input type="checkbox" id="fstock"> Yalnızca stokta olanlar</label>
+    <label class="chip check petchip"><input type="checkbox" class="petmode"> Evcil hayvan dostu</label>
   </div>
   <div id="shophead"></div>
   <div id="mstatus" class="muted" aria-live="polite"></div>
@@ -145,6 +148,7 @@
 
 <dialog class="sheetmodal" id="pmodal" aria-labelledby="pm-title"></dialog>
 <dialog class="lightbox" id="lightbox" aria-label="Fotoğraf galerisi"></dialog>
+<dialog class="sheetmodal tooldlg" id="tooldlg" aria-labelledby="tool-title"></dialog>
 
 <script src="/app.js" defer></script>
 </body>

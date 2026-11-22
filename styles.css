@@ -444,3 +444,29 @@ dialog.lightbox::backdrop{background:#0F1F16}
   .g-title{max-width:none}
 }
 @media (max-width:560px){ .care-grid{grid-template-columns:1fr 1fr} .care-card{padding:12px} .care-card p{font-size:.88rem} }
+
+/* ---------- araçlar: bitki bul, sorun teşhisi, evcil hayvan dostu ---------- */
+.petchip input:checked + *{font-weight:700}
+.petchip:has(input:checked){background:var(--ink);color:var(--paper)}
+.sugg li svg{width:16px;height:16px;flex:none}
+dialog.tooldlg{width:min(720px,94vw)}
+.tool-in{padding:30px clamp(18px,4vw,34px) 26px;max-height:88vh;overflow:auto}
+.tool-in h2{font-size:clamp(1.6rem,3vw,2.1rem);letter-spacing:-.03em;line-height:1.05;margin:0 40px 10px 0}
+.tool-in h3{font-size:1.15rem;margin:18px 0 10px}
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 14px}
+.choice{display:flex;flex-direction:column;gap:3px;text-align:left;padding:14px 16px;border-radius:var(--r-md);border:1.5px solid var(--line);background:#fff;cursor:pointer;font-weight:650;transition:border-color .2s var(--ease),transform .2s var(--ease)}
+.choice:hover{border-color:var(--ink);transform:translateY(-1px)}
+.choice small{font-weight:400;color:var(--ink-2);font-size:.85rem}
+.finder-res{list-style:none;margin:6px 0 18px;padding:0;display:grid;gap:12px}
+.finder-res > li{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start;background:#fff;border-radius:var(--r-md);padding:12px}
+.fr-ph{display:block;width:96px;height:96px;border-radius:12px;overflow:hidden;background:#C9D8CD}
+.fr-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.finder-res b{font-size:1.15rem;margin-right:8px}
+.fit{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 9px;border-radius:999px}
+.fit-hi{background:#CFE6CF}.fit-mid{background:#FBE3A8}.fit-lo{background:#F3D9DE}
+.why{margin:8px 0 10px;padding-left:1.1em;color:var(--ink-2);font-size:.93rem}
+.diag-cause{font-size:clamp(1.3rem,2.4vw,1.6rem);font-weight:650;letter-spacing:-.015em;margin:0 0 14px}
+.diag-steps{display:grid;gap:8px;padding-left:1.3em;margin:0 0 16px}
+.diag-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff;border-radius:var(--r-md);padding:14px 16px;margin:0 0 30px}
+.diag-cta span{color:var(--ink-2)}
+@media (max-width:560px){ .finder-res > li{grid-template-columns:72px 1fr} .fr-ph{width:72px;height:72px} }

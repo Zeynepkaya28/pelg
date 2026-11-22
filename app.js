@@ -661,6 +661,7 @@ function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
         careCard(CARE_ICON.hum,"Nem",null,C.humidity),
         careCard(CARE_ICON.feed,"Besin",null,C.feed))),
     SEASONS[f.id]?el("div",{class:"season"},el("b",{text:`Bu mevsim · ${SEASON_NAMES[seasonOf()]}`}),el("p",{text:SEASONS[f.id][seasonOf()]})):null,
+    f.enc?null:el("div",{class:"diag-cta"},el("span",{text:"Yaprakları sararıyor, çiçek açmıyor ya da böcek mi var?"}),el("button",{type:"button",class:"btn ghost",onclick:()=>openDiagnosis(f)},"Bitkinde bir sorun mu var?")),
     f.good?.length||f.bad?.length?el("div",{class:"twin"},
       el("div",null,el("h3",{text:"Ona iyi gelenler"}),el("ul",null,f.good.map(g=>el("li",null,svg(ICON.yes),g)))),
       el("div",null,el("h3",{text:"Ondan uzak tut"}),el("ul",null,f.bad.map(g=>el("li",null,svg(ICON.no),g))))):null,
@@ -683,6 +684,63 @@ const CARE_ICON={
 };
 /* sağlık ve kullanım: el yazımı notlar (16 bitki) — Vikipedi bölümleri loadInfo ile altına eklenir */
 const LEVEL_TEXT={"güçlü":"Bilimsel kanıt: güçlü","sınırlı":"Bilimsel kanıt: sınırlı","yok":"Bilimsel kanıt: yok"};
+
+/* Nerede yetişir: ev içi, balkon/teras, bahçe, hediye (kesme ya da saksı hediyelik) — "Bana uygun bitki bul" için */
+const PLACES={zambak:["balkon","bahce","hediye"],gul:["balkon","bahce","hediye"],lale:["balkon","bahce","hediye"],orkide:["ev","hediye"],
+  papatya:["balkon","bahce","hediye"],aycicegi:["balkon","bahce","hediye"],lavanta:["balkon","bahce"],karanfil:["balkon","bahce","hediye"],
+  sumbul:["ev","balkon","bahce"],nergis:["balkon","bahce"],kasimpati:["ev","balkon","bahce","hediye"],ortanca:["balkon","bahce"],
+  menekse:["ev","hediye"],gerbera:["ev","balkon","hediye"],sakayik:["bahce","hediye"],zeytin:["balkon","bahce"]};
+const isPetSafe=f=>!!f&&/zehirsiz/i.test(f.toxic||"");
+const BULBS=["zambak","lale","sumbul","nergis"];
+
+/* Sorun teşhisi: belirti -> ayrıntı -> olası neden + ne yapmalı. Genel bahçecilik bilgisidir. */
+const DIAG=[
+  {id:"sari",t:"Yapraklar sararıyor",q:"Hangisi daha çok uyuyor?",opts:[
+    {t:"Alttaki yaşlı yapraklar sararıyor, toprak hep nemli",cause:"Fazla sulama; kökler havasız kalıyor",steps:["Toprağın üst 2–3 cm'si kuruyana kadar sulama.","Saksının altında delik olduğundan ve tabakta su beklemediğinden emin ol.","Toprak kokuyorsa ya da kökler kahverengi ve yumuşaksa bitkiyi çıkar, çürük kökleri kes, süzek toprağa al."]},
+    {t:"Yapraklar sararıp kuruyor, toprak kupkuru",cause:"Susuzluk",steps:["Suyu alttan akana kadar derin sula; toprak çok kuruysa saksıyı 15–20 dakika su dolu bir kaba otur.","Sonra toprak üstten kuruyunca sula; az az ama sık sulama kökleri yüzeyde tutar."]},
+    {t:"Yeni yapraklar sarı ama damarları yeşil",cause:"Demir eksikliği (çoğunlukla kireçli su ya da toprak)",steps:["Mümkünse yağmur suyu ya da bir gün bekletilmiş su kullan.","Şelatlı demir içeren bir gübre ver.","Asit seven bitkilerde (ortanca vb.) asidik toprak kullan."]},
+    {t:"Bütün bitki soluk, uzun süredir gübre almadı",cause:"Besin (özellikle azot) eksikliği",steps:["Büyüme döneminde (ilkbahar–yaz) etiketteki dozun yarısıyla 2–4 haftada bir sıvı gübre ver.","Kışın gübrelemeyi azalt ya da bırak.","Toprak iki yıldan uzun süredir değişmediyse taze toprağa al."]},
+    {t:"Yerini değiştirdikten sonra birden sarardı",cause:"Taşınma stresi",steps:["Bitkiyi yeni yerinde bırak; sürekli yer değiştirmek stresi artırır.","Kalorifer, klima ve cereyandan uzak tut.","Birkaç hafta gübre verme; yeni yapraklar sağlıklı gelirse sorun geçmiştir."]}]},
+  {id:"uc",t:"Yaprak uçları ya da kenarları kahverengi",q:"Hangisi daha çok uyuyor?",opts:[
+    {t:"Uçlar kuru ve gevrek, oda havası kuru",cause:"Düşük nem",steps:["Kaloriferden uzaklaştır.","Saksıyı ıslak çakıl dolu bir tabağa koy ya da bitkileri bir araya topla.","Kahverengi uçları, sağlıklı dokuya dokunmadan makasla düzelt."]},
+    {t:"Toprağın yüzeyinde beyaz bir kabuk var",cause:"Tuz ve gübre birikimi",steps:["Saksıdan bol su geçirerek toprağı yıka (alttan akana kadar, birkaç kez).","Gübre dozunu azalt.","Beyaz kabuk tutmuş üst toprağı kazıyıp tazesiyle değiştir."]},
+    {t:"Kenarlarda kahverengi lekeler, güneşli pencerede duruyor",cause:"Güneş yanığı",steps:["Öğle güneşinden koru; tül perde arkasına al.","Yanık yapraklar düzelmez; bitki yeni yaprak verince onları kesebilirsin."]}]},
+  {id:"beyaz",t:"Yapraklarda beyaz toz ya da pamuk",q:"Neye benziyor?",opts:[
+    {t:"Un serpilmiş gibi beyaz toz, parmakla siliniyor",cause:"Külleme (mantar hastalığı)",steps:["Hastalıklı yaprakları al ve çöpe at (kompost yapma).","Hava dolaşımını artır; yaprakları ıslatmadan, sabah sula.","Yayılıyorsa kükürtlü ya da potasyum bikarbonatlı bir bitki koruma ürünü kullan."]},
+    {t:"Yaprak koltuklarında beyaz, pamuksu kümeler",cause:"Unlu bit",steps:["Bitkiyi diğerlerinden ayır.","Kümeleri alkole batırılmış pamuklu çubukla tek tek sil.","Birkaç gün arayla tekrarla; gerekirse arap sabunlu su ya da neem yağı püskürt."]},
+    {t:"İnce ağlar ve yapraklarda minik noktalar",cause:"Kırmızı örümcek (akar)",steps:["Yaprakları, özellikle altlarını ılık suyla duşla.","Nemi artır; akarlar kuru havayı sever.","Arap sabunlu su ya da akarlara karşı bir ürünü birkaç kez uygula."]}]},
+  {id:"bocek",t:"Yapraklar yapışkan ya da küçük böcekler var",q:"Hangisini görüyorsun?",opts:[
+    {t:"Filiz uçlarında yeşil ya da siyah minik böcek kümeleri",cause:"Yaprak biti",steps:["Tazyikli suyla yıka ya da elle temizle.","Arap sabunlu su (1 litre suya 1 yemek kaşığı) püskürt; birkaç gün arayla tekrarla.","Bahçede uğur böceği gibi doğal düşmanlar varsa ilaçtan kaçın."]},
+    {t:"Dokununca havalanan minik beyaz sinekler",cause:"Beyaz sinek",steps:["Sarı yapışkan tuzak as.","Yaprak altlarını arap sabunlu suyla yıka.","Yoğun durumda bitkiyi diğerlerinden ayır."]},
+    {t:"Toprağın üstünde uçuşan küçük siyah sinekler",cause:"Mantar sineği (fazla nemli toprak)",steps:["Toprağın üstü iyice kurusun; sulamayı seyrelt.","Sarı yapışkan tuzak as.","Üst toprağı ince bir kum ya da çakıl tabakasıyla kapat."]}]},
+  {id:"cicek",t:"Çiçek açmıyor",q:"Hangisi daha çok uyuyor?",opts:[
+    {t:"Bitki sağlıklı, yaprak veriyor ama çiçek yok",cause:"Yetersiz ışık ya da fazla azotlu gübre",steps:["Daha aydınlık bir yere al; çoğu çiçekli bitki günde en az 4–6 saat parlak ışık ister.","Fosfor ve potasyumu yüksek bir çiçek gübresi kullan; azotlu gübreyi azalt."]},
+    {t:"Soğanlı bir bitki, geçen yıl açmıştı",cause:"Soğan güç toplayamadı ya da soğuk dönem eksik",steps:["Çiçek sonrası yaprakları kendiliğinden sararana kadar kesme; soğan bu sürede beslenir.","Lale, sümbül, nergis gibi soğanlılar çiçek için birkaç hafta soğuk (yaklaşık 10 °C altı) ister.","Kalabalıklaşan öbekleri sonbaharda ayır."]},
+    {t:"Yanlış zamanda budamış olabilirim",cause:"Çiçek tomurcukları budamayla gitti",steps:["Bazı bitkiler (ör. çoğu ortanca) geçen yılın dalında çiçek açar; bunları çiçeklenme biter bitmez buda.","Bu yıl yalnızca kurumuş dalları al; bir sonraki sezon çiçek gelir."]}]},
+  {id:"sarkik",t:"Bitki sarkık, solgun",q:"Toprak nasıl?",opts:[
+    {t:"Toprak kuru",cause:"Susuzluk",steps:["Derin sula; çoğu bitki birkaç saat içinde toparlanır.","Sıcak havada sabah erken ya da akşam sula."]},
+    {t:"Toprak ıslak ama bitki yine de sarkık",cause:"Kök çürümesi",steps:["Sulamayı hemen kes.","Bitkiyi saksıdan çıkar; kahverengi, yumuşak, kötü kokan kökleri kes.","Temiz bir saksıda süzek, kuru toprağa dik; birkaç gün sulama."]},
+    {t:"Sıcak bir günden sonra oldu",cause:"Sıcak stresi",steps:["Öğle saatlerinde gölgeye al.","Toprağı nemli tut ama tabakta su bırakma; akşam serinleyince toparlanır."]}]},
+  {id:"dokulme",t:"Yapraklar dökülüyor",q:"Ne zaman başladı?",opts:[
+    {t:"Yeni aldım ya da yerini değiştirdim",cause:"Uyum stresi",steps:["Yerini sabit tut, birkaç hafta bekle.","Fazla sulayarak telafi etmeye çalışma."]},
+    {t:"Soğuk cam, kapı ya da klimanın yanında duruyor",cause:"Soğuk hava akımı ya da ani sıcaklık değişimi",steps:["Cereyandan ve soğuk camdan uzaklaştır.","Gece sıcaklığının bitkinin istediği aralıkta kaldığından emin ol."]},
+    {t:"Kışın, ışık azken",cause:"Işık azlığı",steps:["En aydınlık pencereye taşı.","Kışın sulama ve gübreyi azalt; bitki yavaşlar."]}]},
+  {id:"curuk",t:"Gövde dibi kararmış, yumuşak",q:null,opts:[
+    {t:"Gövde dibi kararmış, yumuşak",cause:"Gövde ya da kök çürümesi (çoğunlukla fazla su)",steps:["Sulamayı kes.","Çürük kısmı, sağlam dokuya kadar temiz ve dezenfekte edilmiş bir bıçakla kes.","Kurtarılamıyorsa sağlıklı bir dalından çelik alarak bitkiyi yeniden üret.","Bir dahaki sefere süzek toprak ve delikli saksı kullan."]}]}
+];
+/* bitkiye özel not (varsa) */
+function diagNote(did,oi,f){
+  const id=f?.id; if(!id) return null;
+  if(did==="sari"&&BULBS.includes(id)) return "Soğanlılarda çiçeklenmeden sonra yaprakların sararması doğaldır; yaprakları kendiliğinden kuruyana kadar kesme.";
+  if(did==="sari"&&oi===2&&id==="ortanca") return "Ortanca kireçli suya çok hassastır; demir eksikliği en çok onda görülür.";
+  if(did==="cicek"&&id==="orkide") return "Orkidede yeni çiçek dalı için gece sıcaklığının birkaç hafta 15–18 °C'ye düşmesi gerekir.";
+  if(did==="cicek"&&id==="ortanca") return "Çoğu ortanca geçen yılın dalında çiçek açar; sonbaharda ya da ilkbaharda sert budama çiçeği götürür.";
+  if(did==="cicek"&&BULBS.includes(id)) return "Bu bitki çiçek açmak için soğuk bir dönem ister.";
+  if(did==="sarkik"&&oi===1&&(id==="lavanta"||id==="zeytin")) return "Bu bitki kuraklığı sever; en sık ölüm nedeni fazla sulamadır.";
+  if(did==="uc"&&oi===0&&(id==="orkide"||id==="menekse")) return "Bu bitki nemli havayı sever; kışın kalorifer havası yaprak uçlarını kurutur.";
+  if(did==="beyaz"&&oi===0&&["gul","sakayik","ortanca","kasimpati"].includes(id)) return "Bu bitkide külleme sık görülür; yapraklar arasında hava dolaşsın.";
+  return null;
+}
 function healthBlock(f){
   const h=HEALTH[f.id];
   return el("section",{class:"block health",id:"health",hidden:!h},
@@ -733,7 +791,7 @@ function renderMeaning(){
 function renderRelated(){
   const box=document.getElementById("related"); if(!box||!current) return;
   const fam=familyOf(current.colors[currentColor].n);
-  const hits=FLOWERS.filter(f=>f.id!==current.id).map(f=>({f,i:f.colors.findIndex(c=>familyOf(c.n)===fam)})).filter(x=>x.i>=0).slice(0,6);
+  const hits=FLOWERS.filter(f=>f.id!==current.id&&(!petMode||isPetSafe(f))).map(f=>({f,i:f.colors.findIndex(c=>familyOf(c.n)===fam)})).filter(x=>x.i>=0).slice(0,6);
   if(!hits.length||fam==="Diğer"){ box.replaceChildren(); return; }
   box.replaceChildren(el("span",{class:"muted",text:`${fam} renkte başka çiçekler: `}),
     ...hits.map(({f,i})=>el("a",{class:"chip",href:plantPath(f,i),onclick:e=>{ e.preventDefault(); showFlower(f,i,{scroll:true}); }},
@@ -987,22 +1045,25 @@ function hl(text,q){ // eşleşen öneki <mark> ile vurgula (DOM düğümleriyle
   return out;
 }
 function guideMatches(q){
+  let hiddenToxic=0; // evcil hayvan dostu modunda gizlenen zehirli bitkiler
   const nq=norm(q), ids=gTrie.search(q);
   const colorHit=f=>f.colors.findIndex(c=>{ const nc=norm(c.n); return nq.split(" ").some(t=>t.length>1&&nc.startsWith(t)); });
   return ids.map(id=>BY_ID[id]).map(f=>{
     const nn=norm(f.name), ci=colorHit(f);
     const rank = nn.startsWith(nq)?0 : nn.split(" ").some(w=>nq.split(" ").some(t=>w.startsWith(t)))?1 : f.aliases.some(a=>norm(a).startsWith(nq))?2 : 3;
     return {f,ci,rank};
-  }).sort((a,b)=>a.rank-b.rank||a.f.name.localeCompare(b.f.name,"tr")).slice(0,8);
+  }).sort((a,b)=>a.rank-b.rank||a.f.name.localeCompare(b.f.name,"tr")).filter(x=>!petMode||isPetSafe(x.f)||(hiddenToxic++,false)).slice(0,8).concat(hiddenToxic?[{pethidden:hiddenToxic}]:[]);
 }
 combo(document.getElementById("q"),document.getElementById("sugg"),{
   source:guideMatches,
   render:(li,it,q)=>{
+    if(it.pethidden){ li.append(svg(ICON.paw),el("span",{class:"muted",text:`${it.pethidden} bitki evcil hayvanlar için zehirli olduğu için gizlendi · göstermek için tıkla`})); return; }
     if(it.ai){ li.append(el("span",{class:"dot",style:"background:var(--pollen)"}),el("span",{class:"ai",text:`“${clampStr(q,40)}” rehberde yok — yapay zekâdan bakım kartı iste`})); return; }
     const c=it.f.colors[it.ci>=0?it.ci:0];
     li.append(el("span",{class:"dot",style:`background:${safeHex(c.hex)}`}),el("span",null,hl(it.f.name,q)),el("small",{text:it.ci>=0?`${c.n.toLocaleLowerCase("tr")} · ${c.m}`:it.f.latin}));
   },
   choose:(it,input)=>{
+    if(it.pethidden){ setPetMode(false); input.dispatchEvent(new Event("input")); input.focus(); return; }
     if(it.ai){ aiPlant(input.value); return; }
     input.value=it.f.name; showFlower(it.f,it.ci>=0?it.ci:0,{scroll:true});
   },
@@ -1020,7 +1081,7 @@ function renderColors(){
   bar.replaceChildren(el("button",{class:"chip","aria-pressed":String(!colorFilter),onclick:()=>{colorFilter="";renderColors();}},"Hepsi"),
     ...COLOR_FAMILIES.map(([n,h])=>el("button",{class:"chip","aria-pressed":String(colorFilter===n),onclick:()=>{colorFilter=n;renderColors();}},el("i",{style:`background:${h}`}),n)));
   const rows=[];
-  FLOWERS.forEach(f=>f.colors.forEach((c,i)=>{ if(!colorFilter||familyOf(c.n)===colorFilter) rows.push({f,c,i}); }));
+  FLOWERS.forEach(f=>{ if(petMode&&!isPetSafe(f)) return; f.colors.forEach((c,i)=>{ if(!colorFilter||familyOf(c.n)===colorFilter) rows.push({f,c,i}); }); });
   rows.sort((a,b)=>a.c.n.localeCompare(b.c.n,"tr")||a.f.name.localeCompare(b.f.name,"tr"));
   document.getElementById("lex").replaceChildren(...rows.map(({f,c,i})=>el("button",{class:"entry",onclick:()=>{ location.hash="rehber"; showFlower(f,i,{scroll:true}); }},
     el("span",{class:"c",style:`background:${safeHex(c.hex)}`}),
@@ -1082,6 +1143,7 @@ function filteredProducts(){
   const cat=document.getElementById("fcat").value, city=document.getElementById("fcity").value, sort=document.getElementById("fsort").value;
   if(cat) list=list.filter(p=>p.cat===cat); if(city) list=list.filter(p=>p.shop.city===city);
   if(document.getElementById("fstock").checked) list=list.filter(p=>p.stock>0);
+  if(petMode) list=list.filter(p=>isPetSafe(BY_ID[p.species])); // türü bilinmeyen ürünler de gizlenir
   const by=sort==="cheap"?(a,b)=>a.price-b.price:sort==="dear"?(a,b)=>b.price-a.price:(a,b)=>b.created-a.created;
   // tükenenler her zaman sona
   return [...list].sort((a,b)=>(a.stock>0?0:1)-(b.stock>0?0:1)||by(a,b));
@@ -1568,6 +1630,113 @@ async function reencode(file){
   const b=await new Promise(r=>c.toBlob(r,"image/webp",.86)); if(b&&b.type==="image/webp"&&b.size<5e6) return b;
   return await new Promise(r=>c.toBlob(r,"image/jpeg",.82));
 }
+
+/* =========================================================
+   8b. ARAÇLAR: evcil hayvan dostu mod, "Bana uygun bitki bul", sorun teşhisi
+   ========================================================= */
+let petMode=(()=>{ try{ return localStorage.getItem("sera.pet")==="1"; }catch(e){ return false; } })();
+function setPetMode(on){
+  petMode=!!on; try{ localStorage.setItem("sera.pet",petMode?"1":"0"); }catch(e){}
+  document.querySelectorAll("input.petmode").forEach(c=>{ c.checked=petMode; });
+  renderRelated();
+  if(document.getElementById("v-renkler").classList.contains("on")) renderColors();
+  if(document.getElementById("v-pazar").classList.contains("on")) renderMarket();
+}
+document.querySelectorAll("input.petmode").forEach(c=>{ c.checked=petMode; c.addEventListener("change",()=>setPetMode(c.checked)); });
+
+const toolDlg=document.getElementById("tooldlg");
+toolDlg?.addEventListener("click",e=>{ if(e.target===toolDlg) toolDlg.close(); }); // eski önbellekli sayfa + yeni kod durumunda çökmesin
+function toolFrame(title,...body){
+  toolDlg.replaceChildren(el("button",{class:"close","aria-label":"Kapat",onclick:()=>toolDlg.close()},"×"),
+    el("div",{class:"tool-in"},el("h2",{id:"tool-title",text:title}),...nodes(body)));
+  if(!toolDlg.open) toolDlg.showModal();
+  toolDlg.querySelector(".tool-in button, .tool-in a")?.focus();
+}
+const choiceList=(opts,pick)=>el("div",{class:"choices"},...opts.map(o=>el("button",{type:"button",class:"choice",onclick:()=>pick(o.v)},o.t,o.d?el("small",{text:o.d}):null)));
+async function thumbFor(f,img){ const m=await plantMedia(f); if(m.photos[0]) img.src=m.photos[0].thumb; }
+
+/* --- Bana uygun bitki bul --- */
+const FAMILY_NAMES=COLOR_FAMILIES.map(([n])=>n);
+function openFinder(){
+  const a={place:null,light:2,water:2,pet:petMode,color:""};
+  const steps=[
+    {k:"place",q:"Bitki nerede duracak?",opts:[{v:"ev",t:"Ev içinde"},{v:"balkon",t:"Balkon ya da teras"},{v:"bahce",t:"Bahçede"},{v:"hediye",t:"Hediye edeceğim",d:"Kesme çiçek ya da saksı"}]},
+    {k:"light",q:"Orası ne kadar aydınlık?",skip:()=>a.place==="hediye",opts:[{v:1,t:"Az",d:"Kuzey cephe ya da pencereden uzak"},{v:2,t:"Orta",d:"Aydınlık oda, dolaylı ışık"},{v:3,t:"Bol",d:"Günde birkaç saat doğrudan güneş"}]},
+    {k:"water",q:"Sulamaya ne kadar vaktin var?",skip:()=>a.place==="hediye",opts:[{v:1,t:"Az",d:"Unutkanım, ara sıra sularım"},{v:2,t:"Orta",d:"Haftada bir sularım"},{v:3,t:"Çok",d:"Sık sularım, ilgilenmeyi severim"}]},
+    {k:"pet",q:"Evde kedi ya da köpek var mı?",opts:[{v:true,t:"Var",d:"Yalnızca zehirsiz bitkileri öner"},{v:false,t:"Yok"}]},
+    {k:"color",q:"Bir renk tercihin var mı?",opts:[{v:"",t:"Fark etmez"},...FAMILY_NAMES.map(n=>({v:n,t:n}))]}
+  ];
+  const ask=i=>{
+    while(i<steps.length&&steps[i].skip?.()) i++;
+    if(i>=steps.length) return showFinderResults(a);
+    const st=steps[i], total=steps.filter(s=>!s.skip?.()).length, nr=steps.slice(0,i+1).filter(s=>!s.skip?.()).length;
+    toolFrame("Sana uygun bitkiyi bulalım",el("p",{class:"muted",text:`Soru ${nr} / ${total}`}),el("h3",{text:st.q}),
+      choiceList(st.opts,v=>{ a[st.k]=v; ask(i+1); }),
+      i>0?el("button",{type:"button",class:"linkbtn small",onclick:()=>{ let j=i-1; while(j>0&&steps[j].skip?.()) j--; ask(j); }},"Geri"):null);
+  };
+  ask(0);
+}
+function scorePlant(f,a){
+  const why=[]; let s=0;
+  if(a.pet&&!isPetSafe(f)) return null;
+  if(!(PLACES[f.id]||[]).includes(a.place)) return null;
+  if(a.place!=="hediye"){
+    const L=f.care.light[0], W=f.care.water[0];
+    if(L>a.light){ s-=3*(L-a.light); } else if(L===a.light){ s+=2; why.push("Işık isteği seçtiğin yere uyuyor"); } else { s-=1; }
+    if(W>a.water){ s-=2*(W-a.water); } else if(W===1&&a.water===1){ s+=2; why.push("Az suyla idare eder"); } else if(W===a.water){ s+=1; why.push("Sulama temposu sana uyar"); } else if(a.water-W>1){ s-=1; why.push("Fazla sulamaya dikkat"); }
+  } else why.push("Hediyelik olarak sık tercih edilir");
+  if(a.color){ const has=f.colors.some(c=>familyOf(c.n)===a.color); if(has){ s+=2; why.push(`${a.color} renkleri var`); } else s-=2; }
+  if(isPetSafe(f)) why.push("Kedi ve köpekler için zehirsiz");
+  return {f,s,why};
+}
+function showFinderResults(a){
+  const rows=FLOWERS.map(f=>scorePlant(f,a)).filter(Boolean).sort((x,y)=>y.s-x.s).slice(0,5);
+  const notes=[];
+  if(a.light===1&&a.place!=="hediye") notes.push("Rehberdeki bitkilerin hiçbiri gerçekten az ışığı sevmiyor; aşağıdakiler en iyi idare edenler. Yine de onları evin en aydınlık köşesine koy.");
+  if(a.pet) notes.push("Yalnızca kedi ve köpekler için zehirsiz kabul edilen bitkiler gösteriliyor.");
+  const label=s=>s>=3?"Çok uygun":s>=0?"Uygun":"Biraz zahmetli";
+  toolFrame(rows.length?"Sana uygun bitkiler":"Uygun bitki bulunamadı",
+    ...notes.map(t=>el("p",{class:"muted",text:t})),
+    rows.length?el("ul",{class:"finder-res"},...rows.map(({f,s,why})=>{
+      const img=el("img",{alt:"",loading:"lazy"}); thumbFor(f,img);
+      const inMarket=PRODUCTS.filter(p=>p.species===f.id&&p.stock>0).length;
+      return el("li",null,el("span",{class:"fr-ph"},img),
+        el("div",null,el("b",{text:f.name}),el("span",{class:"fit fit-"+(s>=3?"hi":s>=0?"mid":"lo"),text:label(s)}),
+          el("ul",{class:"why"},...why.map(w=>el("li",{text:w}))),
+          el("div",{class:"row"},
+            el("button",{class:"btn",type:"button",onclick:()=>{ toolDlg.close(); location.hash="rehber"; showFlower(f,0,{scroll:true}); }},"Bakımını gör"),
+            inMarket?el("button",{class:"btn ghost",type:"button",onclick:()=>{ toolDlg.close(); mQuery=f.name; document.getElementById("mq").value=f.name; location.hash="pazar"; }},`Çiçekçilerde (${inMarket})`):null)));
+    })):el("p",{text:"Seçimlerine tam uyan bir bitki rehberde yok. Işık ya da yer seçimini değiştirerek yeniden dene."}),
+    el("div",{class:"row"},el("button",{class:"btn ghost",type:"button",onclick:openFinder},"Baştan başla")));
+}
+
+/* --- Sorun teşhisi --- */
+function openDiagnosis(f=null){
+  const plant=f&&BY_ID[f.id]?f:null;
+  const head=plant?el("p",{class:"muted",text:`${plant.name} için`}):null;
+  toolFrame("Bitkinde ne sorun var?",head,el("h3",{text:"Ne görüyorsun?"}),
+    choiceList(DIAG.map(d=>({v:d.id,t:d.t})),id=>{
+      const d=DIAG.find(x=>x.id===id);
+      if(d.opts.length===1) return showDiag(d,0,plant);
+      toolFrame(d.t,head,el("h3",{text:d.q}),choiceList(d.opts.map((o,i)=>({v:i,t:o.t})),i=>showDiag(d,i,plant)),
+        el("button",{type:"button",class:"linkbtn small",onclick:()=>openDiagnosis(plant)},"Geri"));
+    }),
+    el("p",{class:"disclaimer",text:"Genel bahçecilik bilgisidir; birden fazla neden aynı belirtiyi verebilir."}));
+}
+function showDiag(d,i,plant){
+  const o=d.opts[i], note=diagNote(d.id,i,plant);
+  toolFrame("Olası neden",
+    el("p",{class:"diag-cause",text:o.cause}),
+    note?el("div",{class:"caution"},svg(ICON.warn),el("p",null,el("b",{text:`${plant.name}: `}),note)):null,
+    el("h3",{text:"Ne yapmalı?"}),
+    el("ol",{class:"diag-steps"},...o.steps.map(t=>el("li",{text:t}))),
+    plant?el("p",{class:"muted"},"Bu bitkinin bakımı: ",el("span",{text:`ışık — ${plant.care.light[1]}; su — ${plant.care.water[1]}`})):null,
+    el("div",{class:"row"},
+      el("button",{class:"btn ghost",type:"button",onclick:()=>openDiagnosis(plant)},"Başka bir belirti"),
+      el("button",{class:"btn",type:"button",onclick:()=>toolDlg.close()},"Tamam")));
+}
+document.getElementById("finderbtn")?.addEventListener("click",openFinder);
+document.getElementById("diagbtn")?.addEventListener("click",()=>openDiagnosis(current&&BY_ID[current.id]?current:null));
 
 /* =========================================================
    9a. KAYDIRINCA SAÇILAN TAÇ YAPRAKLAR (2B tuval, hafif)
