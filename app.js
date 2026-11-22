@@ -2049,7 +2049,7 @@ addEventListener("popstate",()=>{ const p=plantFromUrl(); if(p&&(p.f!==current||
 // Supabase'in e-posta dönüşü URL'de #access_token… bırakır; oturum açılınca panele geçilir
 const AUTH_RETURN=isAuthHash();
 const start=plantFromUrl();
-if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!COLL_RE.test(location.pathname)&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
+if(!start&&location.pathname!=="/"&&!SHOP_RE.test(location.pathname)&&!COLLECTIONS[(location.pathname.match(COLL_RE)||[])[1]]&&!AUTH_RETURN) history.replaceState(null,"","/"+location.hash); // bilinmeyen bitki adresi
 route();
 showFlower(start?.f||BY_ID.zambak,start?.ci||0,{history:start?"replace":"none"});
 loadMarket();
