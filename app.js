@@ -930,7 +930,7 @@ async function loadMedia(f){
   const rest=curPhotos.length-5;
   mosaic.replaceChildren(...curPhotos.slice(1,5).map((p,k)=>{ const i=k+1, last=k===3&&rest>0;
     return el("button",{class:"tile","data-k":String(i),"aria-label":last?`Bütün fotoğraflar (${curPhotos.length})`:`Fotoğraf ${i+1}: ${p.author}`,
-      onclick:()=>last?openLightbox(i):showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}),last?el("span",{class:"more",text:`+${rest+1} fotoğraf`}):null); }));
+      onclick:()=>last?openLightbox(i):showPhoto(i)},el("img",{src:p.thumb,alt:"",decoding:"async"}),last?el("span",{class:"more",text:`+${rest+1} fotoğraf`}):null); }));
   // bütün fotoğraflar: duvar düzeni, her birinin altında sahibi ve lisansı
   photosNote.textContent=`${curPhotos.length} açık lisanslı fotoğraf · iNaturalist ve Wikimedia Commons katılımcılarından`;
   gallery.replaceChildren(...curPhotos.map((p,i)=>el("figure",{class:"mitem"},
