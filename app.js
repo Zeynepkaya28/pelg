@@ -535,7 +535,7 @@ async function plantMedia(f){
   if(!MEDIA.has(key)) MEDIA.set(key, fetch(`/api/plant?latin=${encodeURIComponent(latin)}&tr=${encodeURIComponent(tr)}`).then(r=>r.ok?r.json():{photos:[]}).catch(()=>({photos:[]})));
   const d=await MEDIA.get(key);
   // sunucudan gelen veriyi de doğrula
-  const photos=(Array.isArray(d.photos)?d.photos:[]).filter(p=>/^https:\/\//.test(p?.src)&&/^https:\/\//.test(p?.page)).slice(0,8)
+  const photos=(Array.isArray(d.photos)?d.photos:[]).filter(p=>/^https:\/\//.test(p?.src)&&/^https:\/\//.test(p?.page)).slice(0,24)
     .map(p=>({src:p.src,thumb:/^https:\/\//.test(p.thumb)?p.thumb:p.src,author:clampStr(p.author,120)||"Bilinmiyor",license:clampStr(p.license,30),page:p.page,source:clampStr(p.source,30)}));
   const wiki=d.wiki&&typeof d.wiki.text==="string"?{text:clampStr(d.wiki.text,700),url:/^https:\/\/tr\.wikipedia\.org\//.test(d.wiki.url||"")?d.wiki.url:null}:null;
   return {photos,wiki};
@@ -623,11 +623,12 @@ function showFlower(f,colorIdx=0,{scroll=false,history:hist="push"}={}){
   sheet.replaceChildren(
     el("div",{class:"kind"},f.kind, f.ai?el("span",{class:"ai-badge",text:"Yapay zekâ kartı — doğrulayın"}):null,
       f.ai&&f.sources?.length?el("span",{class:"muted",text:` · Ham veri: ${f.sources.join(", ")}`}):null),
-    el("h2",{text:f.name}),
+    el("div",{class:"titlerow"},el("h2",{text:f.name}),BY_ID[f.id]?shareButton():null),
     el("p",{class:"latin",text:f.latin}),
     el("p",{class:"blurb",text:f.blurb}),
     el("div",{class:"wiki",id:"wiki"}),
     meaning,
+    BY_ID[f.id]?el("div",{class:"related",id:"related"}):null,
     el("h3",{text:"Bakım"}),
     el("dl",{class:"care"},
       el("dt",{text:"Işık"}),el("dd",null,gauge("sun",C.light[0])),el("dd",{class:"txt",text:C.light[1]}),
@@ -654,6 +655,29 @@ function renderMeaning(){
   const c=current.colors[currentColor];
   m.replaceChildren(el("b",{text:`${c.n} ${current.name.toLocaleLowerCase("tr")}`})," — ",c.m+".");
   m.style.background=`color-mix(in srgb, ${safeHex(c.hex)} 22%, #F4F7F2)`;
+  renderRelated();
+}
+/* aynı renk ailesinden başka çiçekler: "Pembe" seçiliyse pembe lale, pembe karanfil… */
+function renderRelated(){
+  const box=document.getElementById("related"); if(!box||!current) return;
+  const fam=familyOf(current.colors[currentColor].n);
+  const hits=FLOWERS.filter(f=>f.id!==current.id).map(f=>({f,i:f.colors.findIndex(c=>familyOf(c.n)===fam)})).filter(x=>x.i>=0).slice(0,6);
+  if(!hits.length||fam==="Diğer"){ box.replaceChildren(); return; }
+  box.replaceChildren(el("span",{class:"muted",text:`${fam} renkte başka çiçekler: `}),
+    ...hits.map(({f,i})=>el("a",{class:"chip",href:plantPath(f,i),onclick:e=>{ e.preventDefault(); showFlower(f,i,{scroll:true}); }},
+      el("i",{style:`background:${safeHex(f.colors[i].hex)}`}),f.name)));
+}
+/* bitkiyi paylaş: telefonda paylaşım menüsü, masaüstünde bağlantıyı kopyalar */
+function shareButton(){
+  const b=el("button",{type:"button",class:"btn ghost share",onclick:async()=>{
+    const url=location.origin+plantPath(current,currentColor), c=current.colors[currentColor];
+    const title=`${c.n} ${current.name.toLocaleLowerCase("tr")} — ${c.m}`;
+    try{
+      if(navigator.share){ await navigator.share({title,text:`${title} · Sera Defteri`,url}); return; }
+      await navigator.clipboard.writeText(url); b.textContent="Bağlantı kopyalandı"; setTimeout(()=>{ b.textContent="Paylaş"; },2000);
+    }catch(_){}
+  }},"Paylaş");
+  return b;
 }
 function pickColor(i){
   currentColor=i; swatches.querySelectorAll(".sw").forEach((b,k)=>b.setAttribute("aria-pressed",String(k===i)));
@@ -694,10 +718,43 @@ async function loadMedia(f){
     gallery.replaceChildren(el("p",{class:"muted",text:"Bu bitki için açık lisanslı fotoğraf bulunamadı; 3B görünüm gösteriliyor."}));
     setMode("3d"); return;
   }
-  gallery.replaceChildren(...curPhotos.map((p,i)=>el("button",{"data-k":String(i),"aria-label":`Fotoğraf ${i+1}: ${p.author}`,onclick:()=>showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}))),
-    el("button",{"data-k":"3d","aria-label":"3B görünüm",class:"t3d",onclick:()=>{ chose3d=true; setMode("3d"); }},"3B"));
+  const STRIP=8; // şeritte ilk 8; hepsi tam ekran galeride
+  gallery.replaceChildren(...curPhotos.slice(0,STRIP).map((p,i)=>el("button",{"data-k":String(i),"aria-label":`Fotoğraf ${i+1}: ${p.author}`,onclick:()=>showPhoto(i)},el("img",{src:p.thumb,alt:"",loading:"lazy"}))),
+    el("button",{"data-k":"3d","aria-label":"3B görünüm",class:"t3d",onclick:()=>{ chose3d=true; setMode("3d"); }},"3B"),
+    el("button",{class:"t3d all","aria-label":`Bütün fotoğraflar (${curPhotos.length})`,onclick:()=>openLightbox(curPhoto)},`Tümü ${curPhotos.length}`));
   if(chose3d&&viewMode==="3d"){ preparePhoto(0); setMode("3d"); } else showPhoto(0);
 }
+
+/* --- tam ekran galeri: büyük fotoğraf, önceki/sonraki, ok tuşları, her fotoğrafta atıf --- */
+const lightbox=document.getElementById("lightbox");
+function openLightbox(start=0){
+  if(!curPhotos.length) return;
+  let i=Math.max(0,Math.min(start,curPhotos.length-1));
+  const img=el("img",{alt:""}), cap=el("p",{class:"lb-cap"}), count=el("span",{class:"lb-count"});
+  const grid=el("div",{class:"lb-grid",role:"group","aria-label":"Küçük resimler"});
+  const go=k=>{
+    i=(k+curPhotos.length)%curPhotos.length; const p=curPhotos[i]; lightbox.dataset.i=String(i);
+    img.src=p.src; img.alt=`${current.name} fotoğrafı ${i+1}`;
+    cap.replaceChildren("Fotoğraf: ",p.author,` · ${p.license} · `,el("a",{href:p.page,target:"_blank",rel:"noopener noreferrer"},p.source));
+    count.textContent=`${i+1} / ${curPhotos.length}`;
+    [...grid.children].forEach((b,j)=>b.setAttribute("aria-current",j===i?"true":"false"));
+    grid.children[i]?.scrollIntoView({block:"nearest",inline:"nearest"});
+  };
+  curPhotos.forEach((p,j)=>grid.append(el("button",{type:"button","aria-label":`Fotoğraf ${j+1}`,onclick:()=>go(j)},el("img",{src:p.thumb,alt:"",loading:"lazy"}))));
+  lightbox.replaceChildren(
+    el("div",{class:"lb-top"},el("b",{text:current.name}),count,el("button",{class:"close","aria-label":"Kapat",onclick:()=>lightbox.close()},"×")),
+    el("div",{class:"lb-main"},
+      el("button",{class:"lb-nav prev","aria-label":"Önceki fotoğraf",onclick:()=>go(i-1)},"‹"),
+      img,
+      el("button",{class:"lb-nav next","aria-label":"Sonraki fotoğraf",onclick:()=>go(i+1)},"›")),
+    cap,grid);
+  lightbox.onkeydown=e=>{ if(e.key==="ArrowRight"){ e.preventDefault(); go(i+1); } else if(e.key==="ArrowLeft"){ e.preventDefault(); go(i-1); } };
+  // dokunmatik: sağa/sola kaydır
+  let sx=null; img.addEventListener("pointerdown",e=>{ sx=e.clientX; }); img.addEventListener("pointerup",e=>{ if(sx!=null&&Math.abs(e.clientX-sx)>40) go(i+(e.clientX<sx?1:-1)); sx=null; });
+  lightbox.showModal(); go(i);
+}
+lightbox.addEventListener("close",()=>{ const k=+lightbox.dataset.i||0; if(curPhotos[k]&&viewMode==="photo") showPhoto(k); }); // galeride son bakılan fotoğraf sahnede kalsın
+photoImg.addEventListener("click",()=>openLightbox(curPhoto));
 
 /* --- yapay zekâya soru --- */
 let aiBusy=false, aiLast=0;
@@ -1407,6 +1464,58 @@ async function reencode(file){
   const b=await new Promise(r=>c.toBlob(r,"image/webp",.86)); if(b&&b.type==="image/webp"&&b.size<5e6) return b;
   return await new Promise(r=>c.toBlob(r,"image/jpeg",.82));
 }
+
+/* =========================================================
+   9a. KAYDIRINCA SAÇILAN TAÇ YAPRAKLAR (2B tuval, hafif)
+   Aşağı kaydırdıkça seçili çiçeğin renginde yapraklar sahneden kopup ekrana dağılır.
+   prefers-reduced-motion açıksa hiç çalışmaz; sekme gizliyken durur.
+   ========================================================= */
+const Petals=(()=>{
+  if(reduced) return {burst(){}};
+  const cv=el("canvas",{class:"petals","aria-hidden":"true"}); document.body.append(cv);
+  const ctx=cv.getContext("2d"); let W=0,H=0,dpr=1,list=[],raf=0,lastY=scrollY,carry=0;
+  const MAX=80;
+  const fit=()=>{ dpr=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
+  fit(); addEventListener("resize",fit);
+  const palette=()=>{ if(!current) return ["#D46F8C","#E9AE35"]; const sel=safeHex(current.colors[currentColor].hex); return [sel,sel,sel,...current.colors.map(c=>safeHex(c.hex))]; };
+  const lighten=(hex,k)=>{ const n=parseInt(hex.slice(1),16); const f=v=>Math.round(v+(255-v)*k); return `rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`; };
+  function spawn(n){
+    // yapraklar sahneden (görünüyorsa) ya da ekranın üstünden kopar
+    const r=stageHost.getBoundingClientRect(), fromStage=r.bottom>0&&r.top<H&&document.getElementById("v-rehber").classList.contains("on");
+    const pal=palette();
+    for(let i=0;i<n&&list.length<MAX;i++){
+      const x=fromStage?r.left+r.width*(.3+Math.random()*.4):Math.random()*W, y=fromStage?r.top+r.height*(.25+Math.random()*.3):-20;
+      const a=Math.random()*Math.PI*2, sp=fromStage?1.5+Math.random()*3:0;
+      list.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(fromStage?1:0)+.4,rot:Math.random()*6.3,vr:(Math.random()-.5)*.08,sway:Math.random()*6.3,
+        s:7+Math.random()*9,c:pal[(Math.random()*pal.length)|0],age:0});
+    }
+    if(!raf) raf=requestAnimationFrame(tick);
+  }
+  function drawPetal(p){
+    const flip=Math.cos(p.sway*1.3); // dönerken ince görünür: sahte 3B
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.scale(1,.35+.65*Math.abs(flip));
+    const g=ctx.createLinearGradient(0,-p.s,0,p.s); g.addColorStop(0,lighten(p.c,.55)); g.addColorStop(1,p.c);
+    ctx.fillStyle=g; ctx.globalAlpha=Math.min(1,p.age/8)*Math.max(0,Math.min(1,(H+20-p.y)/80));
+    ctx.beginPath(); ctx.moveTo(0,-p.s);
+    ctx.bezierCurveTo(p.s*.85,-p.s*.55,p.s*.6,p.s*.75,0,p.s); ctx.bezierCurveTo(-p.s*.6,p.s*.75,-p.s*.85,-p.s*.55,0,-p.s);
+    ctx.fill(); ctx.globalAlpha*=.25; ctx.strokeStyle=lighten(p.c,.8); ctx.lineWidth=.8; ctx.beginPath(); ctx.moveTo(0,-p.s*.7); ctx.lineTo(0,p.s*.8); ctx.stroke(); // damar
+    ctx.restore();
+  }
+  function tick(){
+    raf=0; if(document.hidden){ list=[]; ctx.clearRect(0,0,W,H); return; }
+    ctx.clearRect(0,0,W,H);
+    for(const p of list){ p.age++; p.sway+=.05; p.vx*=.985; p.vy=p.vy*.985+.045; p.x+=p.vx+Math.sin(p.sway)*.7; p.y+=p.vy; p.rot+=p.vr; drawPetal(p); }
+    list=list.filter(p=>p.y<H+40&&p.x>-60&&p.x<W+60);
+    if(list.length) raf=requestAnimationFrame(tick);
+  }
+  addEventListener("scroll",()=>{
+    const dy=scrollY-lastY; lastY=scrollY;
+    const v=document.querySelector("section.view.on")?.id;
+    if(dy<=0||(v!=="v-rehber"&&v!=="v-renkler")) return;
+    carry+=Math.min(dy,240)/38; const n=carry|0; carry-=n; if(n) spawn(n);
+  },{passive:true});
+  return {burst:n=>spawn(n)};
+})();
 
 /* =========================================================
    9b. BİTKİLERİM — sulama hatırlatıcısı (yalnızca bu tarayıcıda)

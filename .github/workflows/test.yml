@@ -21,3 +21,23 @@ jobs:
         run: node -e "JSON.parse(require('fs').readFileSync('vercel.json','utf8'))"
       - name: Birim testleri
         run: npm test
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: İmajı derle
+        run: docker build -t sera-defteri .
+      - name: Kapsayıcıyı çalıştır ve sayfaları dene
+        run: |
+          docker run -d --name sera -p 3000:3000 --read-only --tmpfs /tmp --cap-drop ALL sera-defteri
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:3000/ >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:3000/ | grep -q "<title>Sera Defteri</title>"
+          curl -fsS http://127.0.0.1:3000/bitki/lale | grep -q "Lale bakımı"
+          curl -fsS -o /dev/null http://127.0.0.1:3000/gizlilik
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/yok-boyle)" = "404"
+          curl -fsSI http://127.0.0.1:3000/ | grep -qi "content-security-policy"
+      - name: Günlük (hata olursa)
+        if: failure()
+        run: docker logs sera

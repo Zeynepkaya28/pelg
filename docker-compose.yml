@@ -1,0 +1,20 @@
+# docker compose up --build   ->   http://localhost:3000
+# Anahtarlar (isteğe bağlı) .env.local dosyasından okunur; dosya yoksa da çalışır.
+services:
+  web:
+    build: .
+    image: sera-defteri:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env.local
+        required: false
+    restart: unless-stopped
+    # sertleştirme: salt okunur dosya sistemi, ayrıcalık yok
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

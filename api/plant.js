@@ -7,6 +7,8 @@ const TR_TITLE_RE = /^[A-Za-zÇĞİÖŞÜçğıöşüâîû .'()-]{2,60}$/;
 
 const OK_LICENSES = new Set(["cc0", "cc-by", "cc-by-sa"]);
 const LATIN_RE = /^[A-Za-z][A-Za-z .×-]{1,59}$/;
+const MAX_PHOTOS = 24;
+const dedupe = (list) => { const seen = new Set(); return list.filter((p) => !seen.has(p.page) && seen.add(p.page)); };
 const CACHE = "public, s-maxage=604800, stale-while-revalidate=86400"; // CDN'de 7 gün
 
 async function inaturalist(latin) {
@@ -30,7 +32,7 @@ async function inaturalist(latin) {
       page: `https://www.inaturalist.org/photos/${Number(photo.id)}`,
       source: "iNaturalist",
     });
-    if (photos.length >= 8) break;
+    if (photos.length >= 12) break;
   }
   return { taxon: { id: Number(taxon.id), name: stripHtml(taxon.name, 80), common: stripHtml(taxon.preferred_common_name, 80) }, photos };
 }
@@ -48,7 +50,7 @@ async function commons(latin, need) {
   const u = new URL("https://commons.wikimedia.org/w/api.php");
   Object.entries({
     action: "query", format: "json", generator: "search",
-    gsrsearch: `${latin} flower filetype:bitmap`, gsrnamespace: "6", gsrlimit: "12",
+    gsrsearch: `${latin} flower filetype:bitmap`, gsrnamespace: "6", gsrlimit: "40",
     prop: "imageinfo", iiprop: "url|extmetadata", iiurlwidth: "1200",
     iiextmetadatafilter: "LicenseShortName|Artist|LicenseUrl",
   }).forEach(([k, v]) => u.searchParams.set(k, v));
@@ -87,9 +89,9 @@ export async function GET(request) {
   if (!LATIN_RE.test(latin) || (tr && !TR_TITLE_RE.test(tr))) return json({ error: "Geçersiz bitki adı" }, 400);
 
   const [nat, wiki] = await Promise.all([inaturalist(latin), wikiTr(tr)]);
-  // iNaturalist 6'dan az fotoğraf verdiyse eksik Commons'tan tamamlanır
-  const extra = await commons(latin, 6 - nat.photos.length);
-  const photos = [...nat.photos, ...extra].slice(0, 8);
+  // iNaturalist'in seçtikleri önce; galeri Commons'taki lisansı uygun fotoğraflarla 24'e tamamlanır
+  const extra = await commons(latin, MAX_PHOTOS - nat.photos.length);
+  const photos = dedupe([...nat.photos, ...extra]).slice(0, MAX_PHOTOS);
   // hiçbir kaynaktan veri gelmediyse kısa süre önbelleğe al (geçici kesinti olabilir)
   const empty = !photos.length && !wiki;
   return json({ latin, taxon: nat.taxon, photos, wiki }, 200, empty ? "public, s-maxage=600" : CACHE);

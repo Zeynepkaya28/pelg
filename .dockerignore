@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+.vercel
+.env
+.env.*
+node_modules
+tests
+supabase
+PROMPT.md
+README.md
+Dockerfile
+docker-compose.yml

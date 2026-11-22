@@ -9,3 +9,8 @@ README.md
 
 # GitHub Actions dosyaları yayına girmez
 .github
+
+# Docker dosyaları Vercel yayınına girmez
+Dockerfile
+docker-compose.yml
+.dockerignore

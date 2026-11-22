@@ -18,6 +18,16 @@ Yapay zekâ Vercel AI Gateway üzerinden çalışır: Vercel'de anahtarsız (OID
 
 Yayın: GitHub'daki `main` dalına her `git push` Vercel'de otomatik olarak canlıya yayınlanır (proje: `pelg`, canlı adres: https://pelg.vercel.app). Diğer dallar önizleme adresi alır. Elle yayın gerekirse: `npx vercel@latest deploy --prod`.
 
+## Docker ile çalıştırma
+
+Vercel olmadan kendi sunucunda ya da bilgisayarında:
+
+```bash
+docker compose up --build
+```
+
+Site http://localhost:3000 adresinde açılır. Anahtarlar (isteğe bağlı) `.env.local` dosyasından okunur. Kapsayıcı root olmayan kullanıcıyla, salt okunur dosya sistemiyle çalışır. GitHub Actions her push'ta imajı derleyip sayfaları dener.
+
 ## Yapı
 
 | Dosya | Ne yapar |
